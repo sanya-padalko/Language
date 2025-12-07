@@ -1,0 +1,8 @@
+while (t * x - 4 * y) {
+    x = x + 1;
+};
+
+function f ( param p, param x) {
+    p = p * 12;
+    x = 11 * p;
+};
