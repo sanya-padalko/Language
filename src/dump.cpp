@@ -50,32 +50,30 @@ void TreeImgDump(const char* dot_file_name, Node_t* root) {
 }
 
 void RecDump(Node_t* root, FILE* dot_file) {
-    fprintf(dot_file, "\tNode%llX[shape = Mrecord, style = \"filled\", fillcolor = \"#%06x\", label = <\n\t<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"5\">\n\t\t<TR>\n\t\t\t<TD> ptr: 0x%llX </TD>\n\t\t</TR>\n\n\t\t<TR>\n\t\t\t<TD> ", (ull)root, (unsigned int)CalcHash((long long)root), (ull)root);
-
+    unsigned int color = (unsigned int)CalcHash((long long)root);
+    fprintf(dot_file, "\tNode%llX[shape = Mrecord, style = \"filled\", fillcolor = \"#%06x\"", (ull)root, color);
+    fprintf(dot_file, ", label = <\n\t<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"5\">\n");
+    fprintf(dot_file, "\t\t<TR>\n\t\t\t<TD> ptr: 0x%llX </TD>\n\t\t</TR>\n", (ull)root);
+    
+    fprintf(dot_file, "\n\t\t<TR>\n\t\t\t<TD> ");
     if (root->type == OPER) {
+        fprintf(dot_file, "OPER: ");
         fprintf(dot_file, "%s", opers[root->value->type].dump_view);
     } 
     else if (root->type == NUM) {
+        fprintf(dot_file, "NUM: ");
         fprintf(dot_file, "%lg", root->value->value);
     }
     else {
-        fprintf(dot_file, "%s", root->value->name);
+        fprintf(dot_file, "VAR: ");
+        fprintf(dot_file, "\"%s\"", root->value->name);
     }
+    fprintf(dot_file, " </TD>\n\t\t</TR>\n\n");
+    
+    PrintDotPtr(dot_file, root->left, "left");
+    PrintDotPtr(dot_file, root->right, "right");
 
-    fprintf(dot_file, " </TD>\n\t\t</TR>\n\n\t\t<TR>\n\t\t\t<TD BGCOLOR = \"#%06x\"> left: ", (unsigned int)CalcHash((long long)root->left));
-    if (root->left)
-        fprintf(dot_file, "0x%llX", (ull)root->left);
-    else
-        fprintf(dot_file, "NULL");
-
-    fprintf(dot_file, " </TD>\n\t\t</TR>\n\n\t\t<TR>\n\t\t\t<TD BGCOLOR = \"#%06x\"> right: ", (unsigned int)CalcHash((long long)root->right));
-    if (root->right)
-        fprintf(dot_file, "0x%llX", (ull)root->right);
-    else
-        fprintf(dot_file, "NULL");
-
-    fprintf(dot_file, "</TD>\n\t\t</TR>\n\t</TABLE>>];\n\n");
-
+    fprintf(dot_file, "\t</TABLE>>];\n\n");
     if (root->left) {
         RecDump(root->left, dot_file);
         fprintf(dot_file, "\tNode%llX->Node%llX;\n", (ull)root, (ull)root->left);
@@ -104,4 +102,16 @@ int DarkCalcHash(long long p) {
     c = c ^ (c >> 16);
 
     return (c >> 8) | 0x9F9F9F9F;
+}
+
+void PrintDotPtr(FILE* dot_file, Node_t* node, const char* name) {
+    unsigned int color = (unsigned int)CalcHash((long long)node);
+    fprintf(dot_file, "\t\t<TR>\n\t\t\t<TD BGCOLOR = \"#%06x\"> %s: ", color, name);
+
+    if (node) 
+        fprintf(dot_file, "0x%llX", (ull)node);
+    else
+        fprintf(dot_file, "NULL");
+    
+    fprintf(dot_file, "</TD>\n\t\t</TR>\n");
 }

@@ -14,5 +14,6 @@ void TreeImgDump(const char* dot_file_name, Node_t* root);
 void RecDump(Node_t* root, FILE* dot_file);
 int CalcHash(long long p);
 int DarkCalcHash(long long p);
+void PrintDotPtr(FILE* dot_file, Node_t* node, const char* name);
 
 #endif // _DUMP_H_
