@@ -30,6 +30,18 @@ enum CodeError_t {
     CYCLE_ERR      =    7,
     FILE_ERR       =    8,
     SIZE_ERR       =    9,
+    EMPTY_STACK    =   10,
+    CAPACITY_ERR   =   11,
+    CANARY_ERR     =   12,
+    CAP_SIZE_ERR   =   13,
+    OPERATION_ERR  =   14,  
+    STACK_ERR      =   15,
+    CODE_ERR       =   16,
+    CMD_IND_ERR    =   17,
+    INPUT_ERR      =   18,
+    REG_IND_ERR    =   19,
+    TERM_ERR       =   20,
+    LABEL_ERR      =   21,
     ERROR_COUNTS
 };
 
