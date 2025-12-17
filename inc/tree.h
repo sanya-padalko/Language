@@ -11,6 +11,7 @@
 #include "errors.h"
 #include "vars.h"
 #include "calc.h"
+#include "middle.h"
 
 #define DUMP(tree, error_code, add_info) Dump(tree, VarInfo{#tree, __FILE__, __FUNCTION__, __LINE__, error_code, add_info})
 #define NUM_NODE(x) NodeCtor(NUM, ValueNumCtor(x), NULL, NULL)
@@ -35,12 +36,12 @@ enum OPERATIONS {
     OP_SUB       =   1,
     OP_MUL       =   2,
     OP_DIV       =   3,
-    OP_COS       =   4,
-    OP_SIN       =   5,
-    OP_POW       =   6,
-    OP_LN        =   7,
-    OP_LOG       =   8,
-    OP_EXP       =   9,
+    OP_POW       =   4,
+    OP_LN        =   5,
+    OP_LOG       =   6,
+    OP_EXP       =   7,
+    OP_COS       =   8,
+    OP_SIN       =   9,
     OP_TAN       =  10,
     OP_COT       =  11,
     OP_ASIN      =  12,
@@ -53,8 +54,16 @@ enum OPERATIONS {
     OP_WHILE     =  19,
     OP_FUNC      =  20,
     OP_PARAM     =  21,
-    OP_COMMA     =  22,
-    OP_FUNC_INFO =  23,
+    OP_RETURN    =  22,
+    OP_CALL      =  23,
+    OP_COMMA     =  24,
+
+    OP_LBR       =  25,
+    OP_RBR       =  26,
+    OP_FLBR      =  27,
+    OP_FRBR      =  28,
+
+    OP_INFO      =  29,
 
     OPER_CNT
 };
@@ -99,56 +108,67 @@ struct Operation_t {
     const char* dump_view;
 
     double (*func) (Node_t*, Node_t*);
+
+    const char* proc_view;
 };
 
 const Operation_t opers[] = {
-    { .type = OP_ADD,       .dump_view = "+",        .func = Sum   },
+    { .type = OP_ADD,       .dump_view = "+",        .func = Sum   ,    .proc_view = "ADD"},
     
-    { .type = OP_SUB,       .dump_view = "-",        .func = Sub   },
+    { .type = OP_SUB,       .dump_view = "-",        .func = Sub   ,    .proc_view = "SUB"},
     
-    { .type = OP_MUL,       .dump_view = "*",        .func = Mul   },
+    { .type = OP_MUL,       .dump_view = "*",        .func = Mul   ,    .proc_view = "MUL"},
     
-    { .type = OP_DIV,       .dump_view = "/",        .func = Div   },
+    { .type = OP_DIV,       .dump_view = "/",        .func = Div   ,    .proc_view = "DIV"},
     
-    { .type = OP_COS,       .dump_view = "cos",      .func = Cos   },
+    { .type = OP_POW,       .dump_view = "^",        .func = Pow   ,    .proc_view = "POW"},
     
-    { .type = OP_SIN,       .dump_view = "sin",      .func = Sin   },
+    { .type = OP_LN,        .dump_view = "ln",       .func = Ln    ,    .proc_view = ""   },
     
-    { .type = OP_POW,       .dump_view = "pow",      .func = Pow   },
+    { .type = OP_LOG,       .dump_view = "log",      .func = Log   ,    .proc_view = ""   },
     
-    { .type = OP_LN,        .dump_view = "ln",       .func = Ln    },
+    { .type = OP_EXP,       .dump_view = "e ^",      .func = Exp   ,    .proc_view = ""   },
     
-    { .type = OP_LOG,       .dump_view = "log",      .func = Log   },
+    { .type = OP_COS,       .dump_view = "cos",      .func = Cos   ,    .proc_view = ""   },
     
-    { .type = OP_EXP,       .dump_view = "exp",      .func = Exp   },
+    { .type = OP_SIN,       .dump_view = "sin",      .func = Sin   ,    .proc_view = ""   },
     
-    { .type = OP_TAN,       .dump_view = "tan",      .func = Tan   },
+    { .type = OP_TAN,       .dump_view = "tan",      .func = Tan   ,    .proc_view = ""   },
 
-    { .type = OP_COT,       .dump_view = "cot",      .func = Cot   },
+    { .type = OP_COT,       .dump_view = "cot",      .func = Cot   ,    .proc_view = ""   },
 
-    { .type = OP_ASIN,      .dump_view = "arcsin",   .func = Asin  },
+    { .type = OP_ASIN,      .dump_view = "arcsin",   .func = Asin  ,    .proc_view = ""   },
 
-    { .type = OP_ACOS,      .dump_view = "arccos",   .func = Acos  },
+    { .type = OP_ACOS,      .dump_view = "arccos",   .func = Acos  ,    .proc_view = ""   },
 
-    { .type = OP_ATAN,      .dump_view = "arctan",   .func = Atan  },
+    { .type = OP_ATAN,      .dump_view = "arctan",   .func = Atan  ,    .proc_view = ""   },
 
-    { .type = OP_ACOT,      .dump_view = "arccot",   .func = Acot  },
+    { .type = OP_ACOT,      .dump_view = "arccot",   .func = Acot  ,    .proc_view = ""   },
 
-    { .type = OP_EQ,        .dump_view = "=",        .func = NULL  },
+    { .type = OP_EQ,        .dump_view = "=",        .func = NULL  ,    .proc_view = ""   },
 
-    { .type = OP_IF,        .dump_view = "if",       .func = NULL  },
+    { .type = OP_IF,        .dump_view = "if",       .func = NULL  ,    .proc_view = ""   },
 
-    { .type = OP_OPER,      .dump_view = ";",        .func = NULL  },
+    { .type = OP_OPER,      .dump_view = ";",        .func = NULL  ,    .proc_view = ""   },
 
-    { .type = OP_WHILE,     .dump_view = "while",    .func = NULL  },
+    { .type = OP_WHILE,     .dump_view = "while",    .func = NULL  ,    .proc_view = ""   },
 
-    { .type = OP_FUNC,      .dump_view = "func",     .func = NULL  },
+    { .type = OP_FUNC,      .dump_view = "function", .func = NULL  ,    .proc_view = ""   },
 
-    { .type = OP_PARAM,     .dump_view = "param",    .func = NULL  },
+    { .type = OP_PARAM,     .dump_view = "param",    .func = NULL  ,    .proc_view = ""   },
 
-    { .type = OP_COMMA,     .dump_view = ",",        .func = NULL  },
+    { .type = OP_RETURN,    .dump_view = "return",   .func = NULL  ,    .proc_view = ""   },
+
+    { .type = OP_CALL,      .dump_view = "call",     .func = NULL  ,    .proc_view = ""   },
+
+    { .type = OP_COMMA,     .dump_view = ",",        .func = NULL  ,    .proc_view = ""   },
     
-    { .type = OP_FUNC_INFO, .dump_view = "info",     .func = NULL  },
+    { .type = OP_LBR,       .dump_view = "(",        .func = NULL  ,    .proc_view = ""   },
+    { .type = OP_RBR,       .dump_view = ")",        .func = NULL  ,    .proc_view = ""   },
+    { .type = OP_FLBR,      .dump_view = "{",        .func = NULL  ,    .proc_view = ""   },
+    { .type = OP_FRBR,      .dump_view = "}",        .func = NULL  ,    .proc_view = ""   },
+
+    { .type = OP_INFO,      .dump_view = "info",     .func = NULL  ,    .proc_view = ""   },
 };
 
 Tree_t* TreeCtor();
@@ -164,7 +184,7 @@ Tree_t* ParseTree(Tree_t* tree);
 
 void SelectTreeVars(Node_t* node, Tree_t* tree);
 Var_t* VarCtor(char* name);
-bool CheckVars(Tree_t* forest, char* var_name);
+int GetVarInd(Tree_t* tree, char* var_name);
 
 Node_t* CopyNode(Node_t* node);
 
@@ -177,9 +197,9 @@ double CalculatingNode(Node_t* node, Tree_t* tree);
 double CalcConstNode(Node_t* node, double value);
 
 double GetValue(Node_t* node);
-void ConvolConst(Node_t** node);
-void RemovingNeutral(Node_t** node);
+Node_t* GetLeft(Node_t* node);
+Node_t* GetRight(Node_t* node);
 
-CodeError_t Optimization(Node_t** node_ptr);
+void PrintValueNode(Node_t* node);
 
 #endif

@@ -112,7 +112,10 @@ Tree_t* ParseTree(Tree_t* tree) {
     char* old_buf = tree->buf;
     tree = TreeCtor();
     tree->buf = old_buf;
-    tree->root = GetG(&cur_pos);
+
+    Tokenizator_t* tok = SelectTokens(&cur_pos);
+    int ind = 0;
+    tree->root = GetG(tok->tokens, &ind);
 
     return tree;
 }
@@ -125,7 +128,7 @@ void SelectTreeVars(Node_t* node, Tree_t* tree) {
         return;
 
     if (node->type == VAR) {
-        if (!CheckVars(tree, node->value->name))
+        if (GetVarInd(tree, node->value->name) == -1)
             tree->vars[tree->var_cnt++] = VarCtor(node->value->name);
         return;
     }
@@ -136,16 +139,16 @@ void SelectTreeVars(Node_t* node, Tree_t* tree) {
     return;
 }
 
-bool CheckVars(Tree_t* tree, char* var_name) {
+int GetVarInd(Tree_t* tree, char* var_name) {
     if (!tree || !var_name)
-        return false;
+        return -1;
 
     for (int i = 0; i < tree->var_cnt; ++i) {
         if (!strcmp(tree->vars[i]->name, var_name))
-            return true;
+            return i;
     }
     
-    return false;
+    return -1;
 }
 
 Var_t* VarCtor(char* name) {
@@ -234,7 +237,8 @@ Node_t* CopyNode(Node_t* node) {
 
     Node_t* new_node = (Node_t*)calloc(1, sizeof(Node_t));
     new_node->type = node->type;
-    new_node->value = node->value;
+    new_node->value = (ValueType*)calloc(1, sizeof(ValueType));
+    *(new_node->value) = *(node->value);
 
     new_node->left = CopyNode(node->left);
     new_node->right = CopyNode(node->right);
@@ -263,125 +267,11 @@ Node_t* GetRight(Node_t* node) {
     return node->right;
 }
 
-void ConvolConst(Node_t** node) {
-    if (!node || !(*node))
-        return;
-
-    if ((*node)->type == NUM) 
-        return;
-
-    if ((*node)->type == VAR)
-        return;
-
-    #define is_const(node, dir) ((node)->dir && (node)->dir->type == NUM) 
-    int oper = (*node)->value->type;
-
-    if (oper != OP_ADD && oper != OP_SUB && oper != OP_MUL && oper != OP_POW && oper != OP_LOG && oper != OP_DIV) {
-        if (!is_const(*node, right))
-            return;
-
-        (*node)->type = NUM;
-        (*node)->value->value = opers[oper].func(GetLeft(*node), GetRight(*node));
-
-        (*node)->left = (*node)->right = NULL;
-    }
-    else if (is_const(*node, left) && is_const(*node, right)) {
-        (*node)->type = NUM;
-        (*node)->value->value = opers[oper].func(GetLeft(*node), GetRight(*node));
-
-        (*node)->left = (*node)->right = NULL;
-    }
-    #undef is_const
-
-    return;
-}
-
-void RemovingNeutral(Node_t** node) {
-    if (!node || !(*node))
-        return;
-
-    if ((*node)->type == NUM) 
-        return;
-
-    if ((*node)->type == VAR)
-        return;
-
-    #define is_num(node, dir) ((node)->dir && (node)->dir->type == NUM)
-    #define is_null(node, dir) (is_num(node, dir) && GetValue((node)->dir) == 0)
-    #define is_one(node, dir) (is_num(node, dir) && GetValue((node)->dir) == 1)
-    
-    int oper = (*node)->value->type;
-    
-    if ((*node)->type == OPER && (*node)->value->type == OP_MUL && is_num(*node, right)) {
-        Node_t* add_son = (*node)->right;
-        (*node)->right = (*node)->left;
-        (*node)->left = add_son;
-    }
-
-    if (oper == OP_MUL) {
-        Node_t* right = GetRight(*node);
-        if (is_num(*node, left) && right &&  right->type == OPER && right->value->type == OP_MUL && is_num(right, left)) {
-            double value = GetValue((*node)->left);
-            *node = right;
-            (*node)->left->value->value *= value; 
-            return;
-        }
-
-        if (is_one(*node, left))
-            *node = GetRight(*node);
-        else if (is_one(*node, right))
-            *node = GetLeft(*node);
-
-        if (is_null(*node, left) || is_null(*node, right)) {
-            (*node)->type = NUM;
-            (*node)->value->value = 0;
-            return;
-        }
-    }
-
-    if (oper == OP_ADD || oper == OP_SUB || oper == OP_DIV || oper == OP_POW) {
-        switch (oper) {
-            case OP_ADD:
-                if (is_null(*node, right))
-                    *node = GetLeft(*node);
-                else if (is_null(*node, left))
-                    *node = GetRight(*node);
-                break;
-            case OP_SUB:
-                if (is_null(*node, right))
-                    *node = GetLeft(*node);
-                break;
-            case OP_DIV:
-                if (is_one(*node, right))
-                    *node = GetLeft(*node);
-                break;
-            case OP_POW:
-                if (is_one(*node, right))
-                    *node = GetLeft(*node);
-                else if (is_null(*node, right) || is_one(*node, left))
-                    *node = NUM_NODE(1);
-                break;
-        }
-    }
-
-    #undef is_num
-    #undef is_null
-    #undef is_one
-
-    return;
-}
-
-CodeError_t Optimization(Node_t** node_ptr) {
-    Node_t* node = *node_ptr;
-
-    if (!node || !node_ptr)
-        return NULLPTR;
-
-    Optimization(&node->left);
-    Optimization(&node->right);
-
-    ConvolConst(node_ptr);
-    RemovingNeutral(node_ptr);
-
-    return NOTHING;
+void PrintValueNode(Node_t* node) {
+    if (node->type == NUM)
+        printf("NUM:  %lg\n", node->value->value);
+    else if (node->type == VAR)
+        printf("VAR:  %s\n", node->value->name);
+    else 
+        printf("OPER: %d\n", node->value->type);
 }
