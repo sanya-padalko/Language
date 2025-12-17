@@ -13,353 +13,63 @@
                                         }
 
 #ifdef DEBUG
-#define FUNC_START(str) printf("%s:\n %s\n ------------\n", __FUNCTION__, str);
+#define FUNC_START(str) printf("%s:\n %s\n ------------\n", __FUNCTION__, str)
+#define START() printf("Enter to func: %s\n", __FUNCTION__)
+#define END()   printf(" --- Exit the func: %s\n", __FUNCTION__)
 #else
 #define FUNC_START(str)
+#define START() printf("Enter to func: %s\n", __FUNCTION__)
+#define END()   printf(" --- Exit the func: %s\n", __FUNCTION__)
 #endif
 
 Tokenizator_t* SelectTokens(const char** s) {
-    Tokenizator_t* tokenizator = (Tokenizator_t*)calloc(1, sizeof(Tokenizator_t));
-
-    return tokenizator;
-}
-
-Node_t* GetG(const char** s) {
+    Tokenizator_t* tok = (Tokenizator_t*)calloc(1, sizeof(Tokenizator_t));
     SkipSpaces(s);
-
-    Node_t* node = GetOp(s);
 
     while (**s != '\0') {
-        Node_t* node2 = GetOp(s);
-        if (!node2)
-            return node;
+        Node_t* node = NULL;
+        node = SelectOper(s);
 
-        node = OP_NODE(OP_OPER, c(node), c(node2));
-    }
-    return node;
-}
-
-Node_t* GetOp(const char** s) {
-    FUNC_START(*s);
-    SkipSpaces(s);
-
-    Node_t* node = NULL;
-
-    if (EQUAL(*s, "if")) {
-        node = GetIf(s);
-    }
-    else if (EQUAL(*s, "while")) {
-        node = GetWhile(s);
-    }
-    else if (EQUAL(*s, "function")) {
-        node = GetFunc(s);
-    }
-    else if ('a' <= **s && **s <= 'z') {
-        node = GetA(s);
-        CHECK(s, ";", "end of operation");
-    }
-    else {
-        CHECK(s, "{", "operation");
-        node = GetOp(s);
-
-        while (**s != '}') {
-            Node_t* node2 = GetOp(s);
-            if (!node2)
-                return node;
-
-            node = OP_NODE(OP_OPER, c(node), c(node2));
+        if (!node) {
+            if (('a' <= **s && **s <= 'z') || (**s == '\"'))
+                node = GetV(s);
+            else if ('0' <= **s && **s <= '9')
+                node = GetN(s);
+            else
+                node = SelectBracket(s);
         }
 
-        CHECK(s, "}", "operation");
-        CHECK(s, ";", "end of operation");
-    }
-
-    return node;
-}
-
-Node_t* GetFunc(const char** s) {
-    SkipSpaces(s);
-    FUNC_START(*s);
-
-    if (!EQUAL(*s, "function")) {
-        SyntaxError("(parsing function) expected \"function\", but getting", **s);
-        return NULL;
-    }
-
-    *s += strlen("function");
-    SkipSpaces(s);
-
-    char* func_name = (char*)calloc(MAX_VAR_SIZE, sizeof(char));
-    int ind = 0;
-
-    while ('a' <= **s && **s <= 'z') {
-        func_name[ind++] = **s;
-        ++*s;
-    }
-    func_name[ind] = '\0';
-
-    Node_t* name = VAR_NODE(func_name);
-    Node_t* params = GetParams(s);
-
-    Node_t* func_body = GetOp(s);
-
-    SkipSpaces(s);
-    return OP_NODE(OP_FUNC, OP_NODE(OP_FUNC_INFO, c(name), c(params)), c(func_body));
-}
-
-Node_t* GetParams(const char** s) {
-    SkipSpaces(s);
-    FUNC_START(*s);
-
-    CHECK(s, "(", "params");
-    Node_t* node = NULL;
-
-    while (**s != ')') {
-        if (node) {
-            CHECK(s, ",", "params");
+        if (!node) {
+            printf("Error:\n%s\n ------- \n", *s);
+            return tok;
         }
 
-        Node_t* node2 = GetParam(s);
-        if (!node2)
-            break;
-        
-        if (!node)
-            node = node2;
-        else
-            node = OP_NODE(OP_COMMA, c(node), c(node2));
-    }
-
-    CHECK(s, ")", "params");
-
-    return node;
-}
-
-Node_t* GetParam(const char** s) {
-    SkipSpaces(s);
-    FUNC_START(*s);
-
-    if (!EQUAL(*s, "param")) {
-        SyntaxError("(parsing param) expected \"param\", but getting", **s);
-        return NULL;
-    }
-
-    *s += strlen("param");
-    SkipSpaces(s);
-
-    char* param_name = (char*)calloc(MAX_VAR_SIZE, sizeof(char));
-    int ind = 0;
-    
-    while ('a' <= **s && **s <= 'z') {
-        param_name[ind++] = **s;
-        ++*s;
-    }
-    param_name[ind] = '\0';
-
-    if (ind == 0) {
-        printf("(parsing param) empty name of parameter\n");
-        return NULL;
-    }
-    
-    SkipSpaces(s);
-    return OP_NODE(OP_PARAM, NULL, VAR_NODE(param_name));
-}
-
-Node_t* GetWhile(const char** s) {
-    SkipSpaces(s);
-    FUNC_START(*s);
-
-    if (!EQUAL(*s, "while")) {
-        SyntaxError("(parsing while) expected \"while\", but getting", **s);
-        return NULL;
-    }
-
-    *s += strlen("while");
-    SkipSpaces(s);
-
-    CHECK(s, "(", "while");
-    Node_t* node = GetE(s);
-    CHECK(s, ")", "while");
-
-    Node_t* node2 = GetOp(s);
-
-    return OP_NODE(OP_WHILE, c(node), c(node2));
-}
-
-Node_t* GetIf(const char** s) {
-    SkipSpaces(s);
-    FUNC_START(*s);
-
-    if (!EQUAL(*s, "if")) {
-        SyntaxError("(parsing if) expected \"if\", but getting", **s);
-        return NULL;
-    }
-    
-    *s += strlen("if");
-    SkipSpaces(s);
-
-    CHECK(s, "(", "if");
-    Node_t* node = GetE(s);
-    CHECK(s, ")", "if");
-    Node_t* node2 = GetOp(s);
-
-    return OP_NODE(OP_IF, c(node), c(node2));
-}
-
-Node_t* GetA(const char** s) {
-    SkipSpaces(s);
-    FUNC_START(*s);
-
-    Node_t* node = GetV(s);
-    CHECK(s, "=", "assigned");
-    Node_t* node2 = GetE(s);
-
-    return OP_NODE(OP_EQ, c(node), c(node2));
-}
-
-Node_t* GetE(const char** s) {
-    SkipSpaces(s);
-
-    Node_t* node = GetT(s);
-
-    while (**s == '+' || **s == '-' || **s == '^') {
-        int op = **s;
-        ++*s;
-        Node_t* node2 = GetT(s);
-        if (op == '^')
-            node = OP_NODE(OP_POW, c(node), c(node2));
-        else if (op == '+')
-            node = OP_NODE(OP_ADD, c(node), c(node2));
-        else 
-            node = OP_NODE(OP_SUB, c(node), c(node2));
-    }
-
-    SkipSpaces(s);
-    return node;
-}
-
-Node_t* GetT(const char** s) {
-    SkipSpaces(s);
-
-    Node_t* node = GetPower(s);
-
-    while (**s == '*' || **s == '/') {
-        int op = **s;
-        ++*s;
-        Node_t* node2 = GetPower(s);
-        if (op == '*')
-            node = OP_NODE(OP_MUL, c(node), c(node2));
-        else 
-            node = OP_NODE(OP_DIV, c(node), c(node2));
-    }
-
-    SkipSpaces(s);
-    return node;
-}
-
-Node_t* GetPower(const char** s) {
-    SkipSpaces(s);
-
-    Node_t* node = GetP(s);
-
-    while (**s == '^') {
-        ++*s;
-        Node_t* node2 = GetP(s);
-        
-        node = OP_NODE(OP_POW, c(node), c(node2));
-    }
-
-    return node;
-}
-
-Node_t* GetP(const char** s) {
-    SkipSpaces(s);
-
-    if (**s == '(') {
-        ++*s;
-        Node_t* node = GetE(s);
-
-        CHECK(s, ")", "parentheses");
-        return node;
-    }
-
-    if ('a' <= **s && **s <= 'z') {
-        if (EQUAL(*s, "ln")) {
-            *s += strlen("ln");
-            SkipSpaces(s);
-
-            CHECK(s, "(", "ln");
-            Node_t* node = GetE(s);
-            CHECK(s, ")", "ln");
-
-            return node;
-        }
-
-        if (EQUAL(*s, "log")) {
-            *s += strlen("log");
-            SkipSpaces(s);
-
-            CHECK(s, "(", "log");
-            Node_t* argue = GetE(s);
-            CHECK(s, ",", "log");
-            Node_t* base = GetE(s);
-            CHECK(s, ")", "log");
-
-            return OP_NODE(OP_LOG, c(base), c(argue));
-        }
-
-        if (EQUAL(*s, "e")) {
-            *s += strlen("e");
-            SkipSpaces(s);
-
-            CHECK(s, "^", "exp");
-            CHECK(s, "(", "exp");
-            Node_t* power = GetE(s);
-            CHECK(s, ")", "exp");
-
-            return OP_NODE(OP_EXP, NULL, c(power));
-        }
-        
-        if (EQUAL(*s, "sin") || EQUAL(*s, "cos")) {
-            char first_char = **s;
-            *s += strlen("sin");
-            SkipSpaces(s);
-
-            CHECK(s, "(", "sin/cos");
-            Node_t* node = GetE(s);
-            switch(first_char) {
-                case 'c':
-                    node = OP_NODE(OP_COS, NULL, c(node));
-                    break;
-                case 's':
-                    node = OP_NODE(OP_SIN, NULL, c(node));
-                    break;
-            }
-            CHECK(s, ")", "sin/cos");
-
-            return node;
-        }
-
-        for (int op_ind = OP_TAN; op_ind <= OP_ACOT; ++op_ind) {
-            if (EQUAL(*s, opers[op_ind].dump_view)) {
-                *s += strlen(opers[op_ind].dump_view);
-                SkipSpaces(s);
-
-                CHECK(s, "(", "trigonometry");
-                Node_t* node = GetE(s);
-                node = OP_NODE(opers[op_ind].type, NULL, c(node));
-
-                CHECK(s, ")", "trigonometry");
-
-                return node;
-            }
-        }
-
+        tok->tokens[tok->token_cnt++] = node;
         SkipSpaces(s);
-        return GetV(s);
     }
-    
-    SkipSpaces(s);
-    return GetN(s);
+
+    return tok;
+}
+
+Node_t* SelectOper(const char** s) {
+    for (int i = OP_ADD; i <= OP_COMMA; ++i) {
+        if (EQUAL(*s, opers[i].dump_view)) {
+            *s += strlen(opers[i].dump_view);
+            return OP_NODE(opers[i].type, NULL, NULL);
+        }
+    }
+
+    return NULL;
+}
+
+Node_t* SelectBracket(const char** s) {
+    for (int i = OP_LBR; i <= OP_FRBR; ++i) {
+        if (EQUAL(*s, opers[i].dump_view)) {
+            *s += strlen(opers[i].dump_view);
+            return OP_NODE(opers[i].type, NULL, NULL);
+        }
+    }
+    return NULL;
 }
 
 Node_t* GetV(const char** s) {
@@ -368,8 +78,9 @@ Node_t* GetV(const char** s) {
     char* name = (char*)calloc(MAX_VAR_SIZE, sizeof(char));
     int ind = 0;
 
-    while ('a' <= **s && **s <= 'z') {
-        name[ind++] = **s;
+    while (('a' <= **s && **s <= 'z') || (**s == '\"')) {
+        if (**s != '\"')
+            name[ind++] = **s;
         ++*s;
     }
     name[ind] = '\0';
@@ -395,6 +106,514 @@ Node_t* GetN(const char** s) {
 
     SkipSpaces(s);
     return NUM_NODE(val);
+}
+
+Node_t* GetG(Node_t** tokens, int* ind) {
+    START();
+    Node_t* node = GetOp(tokens, ind);
+
+    while (tokens[*ind]) {
+        Node_t* node2 = GetOp(tokens, ind);
+        if (!node2)
+            return NULL;
+
+        node = OP_NODE(OP_OPER, c(node), c(node2));
+    }
+
+    END();
+    return node;
+}
+
+Node_t* GetOp(Node_t** tokens, int* ind) {
+    START();
+    Node_t* node = NULL;
+    Node_t* node2 = NULL;
+
+    int type = tokens[*ind]->type;
+    int oper = -1;
+    if (type == OPER)
+        oper = tokens[*ind]->value->type;
+
+    switch (oper) {
+        case OP_IF:
+            node = GetIf(tokens, ind);
+            break;
+        case OP_WHILE:
+            node = GetWhile(tokens, ind);
+            break;
+        case OP_FUNC:
+            node = GetFunc(tokens, ind);
+            break;
+        case OP_RETURN:
+            node = GetReturn(tokens, ind);
+            break;
+        case OP_CALL:
+            node = GetCall(tokens, ind);
+            if (!CHECK_TOKEN(tokens[*ind], OP_OPER))
+                printf("There isn't operation's ended symbol\n");
+            else
+                ++*ind;
+            break;
+        case OP_FLBR:
+            ++*ind;
+
+            node = GetOp(tokens, ind);
+
+            while (!CHECK_TOKEN(tokens[*ind], OP_FRBR)) {
+                node2 = GetOp(tokens, ind);
+                if (!node2) 
+                    return node;
+
+                node = OP_NODE(OP_OPER, c(node), c(node2));
+            }
+
+            ++*ind;
+            if (!CHECK_TOKEN(tokens[*ind], OP_OPER)) {
+                printf("There isn't operation's ended symbol\n");
+                return node;
+            }
+            else {
+                ++*ind;
+            }
+
+            break;
+        case -1:
+            node = GetA(tokens, ind);
+            if (!CHECK_TOKEN(tokens[*ind], OP_OPER))
+                printf("There isn't operation's ended symbol\n");
+            else
+                ++*ind;
+                
+            return node;
+        
+        default:
+            printf("Wrong token finded: ");
+            PrintValueNode(tokens[*ind]);
+            return NULL;
+    }
+
+    return node;
+}
+
+Node_t* GetFunc(Node_t** tokens, int* ind) {
+    START();
+    if (!CHECK_TOKEN(tokens[*ind], OP_FUNC)) {
+        printf("(parsing function) expected \"function\", but getting: ");
+        PrintValueNode(tokens[*ind]);
+        return NULL;
+    }
+
+    ++*ind;
+
+    Node_t* name = NULL;
+    if (tokens[*ind]->type == VAR) {
+        name = tokens[*ind];
+        ++*ind;
+    }
+    else {
+        printf("wrong token: ");
+        PrintValueNode(tokens[*ind]);
+        return NULL;
+    }
+
+    Node_t* params = GetParams(tokens, ind);
+
+    Node_t* func_body = GetOp(tokens, ind);
+    if (!func_body)
+        return NULL;
+
+    END();
+    return OP_NODE(OP_FUNC, OP_NODE(OP_INFO, c(name), c(params)), c(func_body));
+}
+
+Node_t* GetReturn(Node_t** tokens, int* ind) {
+    START();
+    if (!CHECK_TOKEN(tokens[*ind], OP_RETURN)) {
+        printf("(parsing return) expected \"return\", but getting: ");
+        PrintValueNode(tokens[*ind]);
+        return NULL;
+    }
+    ++*ind;
+
+    Node_t* node = GetE(tokens, ind);
+    if (!node)
+        return NULL;
+
+    if (!CHECK_TOKEN(tokens[*ind], OP_OPER)) {
+        printf("(parsing return) missing \';\': ");
+        PrintValueNode(tokens[*ind]);
+        return NULL;
+    }
+    ++*ind;
+
+    return OP_NODE(OP_RETURN, NULL, c(node));
+}
+
+Node_t* GetParams(Node_t** tokens, int* ind) {
+    START();
+    if (!CHECK_TOKEN(tokens[*ind], OP_LBR)) {
+        printf("(parsing params) expected \"function\", but getting: ");
+        PrintValueNode(tokens[*ind]);
+        return NULL;
+    }
+    ++*ind;
+
+    Node_t* node = NULL;
+
+    while (!CHECK_TOKEN(tokens[*ind], OP_RBR)) {
+        if (node) {
+            if (!CHECK_TOKEN(tokens[*ind], OP_COMMA)) {
+                printf("Missing \',\' between parametres\n");
+                return NULL;
+            }
+            ++*ind;
+        }
+
+        Node_t* node2 = GetParam(tokens, ind);
+        if (!node2)
+            return NULL;
+        
+        if (!node)
+            node = node2;
+        else
+            node = OP_NODE(OP_COMMA, c(node), c(node2));
+    }
+
+    ++*ind;
+
+    END();
+    return node;
+}
+
+Node_t* GetParam(Node_t** tokens, int* ind) {
+    START();
+    if (!CHECK_TOKEN(tokens[*ind], OP_PARAM)) {
+        printf("(parsing param) expected \"param\", but getting: ");
+        PrintValueNode(tokens[*ind]);
+        return NULL;
+    }
+    ++*ind;
+
+    Node_t* name = NULL;
+    if (tokens[*ind]->type != VAR)
+        return NULL;
+
+    name = tokens[*ind];
+    ++*ind;
+    
+    END();
+    return OP_NODE(OP_PARAM, NULL, name);
+}
+
+Node_t* GetCall(Node_t** tokens, int* ind) {
+    START();
+    if (!CHECK_TOKEN(tokens[*ind], OP_CALL)) {
+        printf("(parsing call) expected \"call\", but getting: ");
+        PrintValueNode(tokens[*ind]);
+        return NULL;
+    }
+    ++*ind;
+
+    Node_t* name = NULL;
+    if (tokens[*ind]->type != VAR)
+        return NULL;
+
+    name = tokens[*ind];
+    ++*ind;
+
+    END();
+    return OP_NODE(OP_CALL, name, GetArgues(tokens, ind));
+}
+
+Node_t* GetArgues(Node_t** tokens, int* ind) {
+    START();
+    if (!CHECK_TOKEN(tokens[*ind], OP_LBR)) {
+        printf("(parsing argues) expected \"(\", but getting: ");
+        PrintValueNode(tokens[*ind]);
+        return NULL;
+    }
+    ++*ind;
+
+    if (tokens[*ind]->type != VAR) {
+        printf("(parsing argues) expected VAR, but getting: ");
+        PrintValueNode(tokens[*ind]);
+        return NULL;
+    }
+
+    Node_t* node = tokens[*ind];
+    ++*ind;
+
+    while (CHECK_TOKEN(tokens[*ind], OP_COMMA)) {
+        ++*ind;
+        
+        if (tokens[*ind]->type != VAR) {
+            printf("(parsing argues) expected VAR, but getting: ");
+            PrintValueNode(tokens[*ind]);
+            return NULL;
+        }
+
+        Node_t* node2 = tokens[*ind];
+        ++*ind;
+
+        node = OP_NODE(OP_COMMA, c(node), c(node2));
+    }
+
+    if (!CHECK_TOKEN(tokens[*ind], OP_RBR)) {
+        printf("(parsing argues) expected \")\", but getting: ");
+        PrintValueNode(tokens[*ind]);
+        return NULL;
+    }
+    ++*ind;
+
+    END();
+    return node;
+}
+
+Node_t* GetWhile(Node_t** tokens, int* ind) {
+    START();
+
+    if (!CHECK_TOKEN(tokens[*ind], OP_WHILE)) {
+        printf("(parsing while) expected \"while\", but getting: ");
+        PrintValueNode(tokens[*ind]);
+        return NULL;
+    }
+    ++*ind;
+
+    if (!CHECK_TOKEN(tokens[*ind], OP_LBR))
+        return NULL;
+    ++*ind;
+
+    Node_t* node = GetE(tokens, ind);
+    if (!CHECK_TOKEN(tokens[*ind], OP_RBR))
+        return NULL;
+    ++*ind;
+
+    Node_t* node2 = GetOp(tokens, ind);
+
+    END();
+    return OP_NODE(OP_WHILE, c(node), c(node2));
+}
+
+Node_t* GetIf(Node_t** tokens, int* ind) {
+    START();
+
+    if (!CHECK_TOKEN(tokens[*ind], OP_IF)) {
+        printf("(parsing if) expected \"if\", but getting: ");
+        PrintValueNode(tokens[*ind]);
+        return NULL;
+    }
+    ++*ind;
+
+    if (!CHECK_TOKEN(tokens[*ind], OP_LBR))
+        return NULL;
+    ++*ind;
+
+    Node_t* node = GetE(tokens, ind);
+
+    if (!CHECK_TOKEN(tokens[*ind], OP_RBR))
+        return NULL;
+    ++*ind;
+
+    Node_t* node2 = GetOp(tokens, ind);
+
+    END();
+    return OP_NODE(OP_IF, c(node), c(node2));
+}
+
+Node_t* GetA(Node_t** tokens, int* ind) {
+    START();
+    Node_t* node = tokens[*ind];
+    if (node->type != VAR)
+        return NULL;
+
+    ++*ind;
+
+    if (!CHECK_TOKEN(tokens[*ind], OP_EQ))
+        return NULL;
+    ++*ind;
+
+    Node_t* node2 = GetE(tokens, ind);
+
+    END();
+    return OP_NODE(OP_EQ, c(node), c(node2));
+}
+
+Node_t* GetE(Node_t** tokens, int* ind) {
+    START();
+    Node_t* node = GetT(tokens, ind);
+
+    while (CHECK_TOKEN(tokens[*ind], OP_ADD) || CHECK_TOKEN(tokens[*ind], OP_SUB) || CHECK_TOKEN(tokens[*ind], OP_POW)) {
+        int op = tokens[*ind]->value->type;
+        ++*ind;
+
+        Node_t* node2 = GetT(tokens, ind);
+        if (op == OP_POW)
+            node = OP_NODE(OP_POW, c(node), c(node2));
+        else if (op == OP_ADD)
+            node = OP_NODE(OP_ADD, c(node), c(node2));
+        else 
+            node = OP_NODE(OP_SUB, c(node), c(node2));
+    }
+
+    END();
+    return node;
+}
+
+Node_t* GetT(Node_t** tokens, int* ind) {
+    START();
+    Node_t* node = GetPower(tokens, ind);
+
+    while (CHECK_TOKEN(tokens[*ind], OP_MUL) || CHECK_TOKEN(tokens[*ind], OP_DIV)) {
+        int op = tokens[*ind]->value->type;
+        ++*ind;
+
+        Node_t* node2 = GetPower(tokens, ind);
+        if (op == OP_MUL)
+            node = OP_NODE(OP_MUL, c(node), c(node2));
+        else 
+            node = OP_NODE(OP_DIV, c(node), c(node2));
+    }
+
+    END();
+    return node;
+}
+
+Node_t* GetPower(Node_t** tokens, int* ind) {
+    START();
+    Node_t* node = GetP(tokens, ind);
+
+    while (CHECK_TOKEN(tokens[*ind], OP_POW)) {
+        ++*ind;
+        Node_t* node2 = GetP(tokens, ind);
+        
+        node = OP_NODE(OP_POW, c(node), c(node2));
+    }
+
+    END();
+    return node;
+}
+
+Node_t* GetP(Node_t** tokens, int* ind) {
+    START();
+
+    if (CHECK_TOKEN(tokens[*ind], OP_LBR)) {
+        ++*ind;
+        Node_t* node = GetE(tokens, ind);
+
+        if (!CHECK_TOKEN(tokens[*ind], OP_RBR))
+            return NULL;
+
+        ++*ind;
+
+        return node;
+    }
+
+    if (tokens[*ind]->type != NUM) {
+        int oper = -1;
+        if (tokens[*ind]->type == OPER) {
+            oper = tokens[*ind]->value->type;
+        }
+        else {
+            Node_t* node = tokens[*ind];
+            ++*ind;
+            return node;
+        }
+
+        Node_t* node = NULL;
+        Node_t* argue = NULL;
+        Node_t* base = NULL;
+        Node_t* name = NULL;
+
+        switch (oper) {
+            case OP_LN:
+                ++*ind;
+                if (!CHECK_TOKEN(tokens[*ind], OP_LBR))
+                    return NULL;
+                ++*ind;
+
+                node = GetE(tokens, ind);
+                if (!CHECK_TOKEN(tokens[*ind], OP_RBR))
+                    return NULL;
+                ++*ind;
+
+                END();
+                return node;
+            
+            case OP_LOG:
+                ++*ind;
+
+                if (!CHECK_TOKEN(tokens[*ind], OP_LBR))
+                    return NULL;
+                ++*ind;
+
+                argue = GetE(tokens, ind);
+                if (!CHECK_TOKEN(tokens[*ind], OP_COMMA))
+                    return NULL;
+                ++*ind;
+
+                base = GetE(tokens, ind);
+                if (!CHECK_TOKEN(tokens[*ind], OP_RBR))
+                    return NULL;
+                ++*ind;
+
+                END();
+                return OP_NODE(OP_LOG, c(base), c(argue));
+            
+            case OP_EXP:
+                ++*ind;
+
+                if (!CHECK_TOKEN(tokens[*ind], OP_LBR))
+                    return NULL;
+                ++*ind;
+
+                node = GetE(tokens, ind);
+                if (!CHECK_TOKEN(tokens[*ind], OP_RBR))
+                    return NULL;
+                ++*ind;
+
+                END();
+                return OP_NODE(OP_EXP, NULL, c(node));
+            
+            case OP_CALL:
+                ++*ind;
+                if (tokens[*ind]->type != VAR)
+                    return NULL;
+
+                name = tokens[*ind];
+                ++*ind;
+
+                END();
+                return OP_NODE(OP_CALL, name, GetArgues(tokens, ind));
+                
+            default:
+
+                for (int op_ind = OP_COS; op_ind <= OP_ACOT; ++op_ind) {
+                    if (oper == op_ind) {
+                        ++*ind;
+                        
+                        if (!CHECK_TOKEN(tokens[*ind], OP_LBR))
+                            return NULL;
+                        ++*ind;
+
+                        node = GetE(tokens, ind);
+                        if (!CHECK_TOKEN(tokens[*ind], OP_RBR))
+                            return NULL;
+                        ++*ind;
+
+                        return node;
+                    }
+                }
+                break;
+        }
+
+        return NULL;
+    }
+    
+    END();
+    Node_t* node = tokens[*ind];
+    ++*ind;
+
+    return node;
 }
 
 void SkipSpaces(const char** s) {
