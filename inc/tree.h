@@ -21,6 +21,7 @@
 #define c(node) CopyNode(node)
 
 const int MAX_VAR_SIZE = 100;
+const int MAX_FUNC_SIZE = 50;
 const int MAX_NODES_CNT = 10000;
 const int MAX_DIFFER = 1000;
 const int MAX_VARS_CNT = 100;
@@ -48,22 +49,29 @@ enum OPERATIONS {
     OP_ACOS      =  13,
     OP_ATAN      =  14,
     OP_ACOT      =  15,
-    OP_EQ        =  16,
-    OP_IF        =  17,
-    OP_OPER      =  18,
-    OP_WHILE     =  19,
-    OP_FUNC      =  20,
-    OP_PARAM     =  21,
-    OP_RETURN    =  22,
-    OP_CALL      =  23,
-    OP_COMMA     =  24,
+    OP_EQUAL     =  16,
+    OP_LESS      =  17,
+    OP_ABOVE     =  18,
+    OP_EQ        =  19,
+    OP_IF        =  20,
+    OP_OPER      =  21,
+    OP_WHILE     =  22,
+    OP_FUNC      =  23,
+    OP_PARAM     =  24,
+    OP_RETURN    =  25,
+    OP_CALL      =  26,
+    OP_INPUT     =  27,
+    OP_OUTPUT    =  28,
+    OP_PROCEDURE =  29,
+    OP_FINISH    =  30,
+    OP_COMMA     =  31,
 
-    OP_LBR       =  25,
-    OP_RBR       =  26,
-    OP_FLBR      =  27,
-    OP_FRBR      =  28,
+    OP_LBR       =  32,
+    OP_RBR       =  33,
+    OP_FLBR      =  34,
+    OP_FRBR      =  35,
 
-    OP_INFO      =  29,
+    OP_INFO      =  36,
 
     OPER_CNT
 };
@@ -99,6 +107,9 @@ struct Tree_t {
     int var_cnt = 0;
     Var_t* vars[MAX_VARS_CNT] = {NULL};
 
+    int func_cnt = 0;
+    char** funcs = NULL;
+
     size_t nodes_cnt = 0;
 };
 
@@ -113,62 +124,76 @@ struct Operation_t {
 };
 
 const Operation_t opers[] = {
-    { .type = OP_ADD,       .dump_view = "+",        .func = Sum   ,    .proc_view = "ADD"},
-    
-    { .type = OP_SUB,       .dump_view = "-",        .func = Sub   ,    .proc_view = "SUB"},
-    
-    { .type = OP_MUL,       .dump_view = "*",        .func = Mul   ,    .proc_view = "MUL"},
-    
-    { .type = OP_DIV,       .dump_view = "/",        .func = Div   ,    .proc_view = "DIV"},
-    
-    { .type = OP_POW,       .dump_view = "^",        .func = Pow   ,    .proc_view = "POW"},
-    
-    { .type = OP_LN,        .dump_view = "ln",       .func = Ln    ,    .proc_view = ""   },
-    
-    { .type = OP_LOG,       .dump_view = "log",      .func = Log   ,    .proc_view = ""   },
-    
-    { .type = OP_EXP,       .dump_view = "e ^",      .func = Exp   ,    .proc_view = ""   },
-    
-    { .type = OP_COS,       .dump_view = "cos",      .func = Cos   ,    .proc_view = ""   },
-    
-    { .type = OP_SIN,       .dump_view = "sin",      .func = Sin   ,    .proc_view = ""   },
-    
-    { .type = OP_TAN,       .dump_view = "tan",      .func = Tan   ,    .proc_view = ""   },
-
-    { .type = OP_COT,       .dump_view = "cot",      .func = Cot   ,    .proc_view = ""   },
-
-    { .type = OP_ASIN,      .dump_view = "arcsin",   .func = Asin  ,    .proc_view = ""   },
-
-    { .type = OP_ACOS,      .dump_view = "arccos",   .func = Acos  ,    .proc_view = ""   },
-
-    { .type = OP_ATAN,      .dump_view = "arctan",   .func = Atan  ,    .proc_view = ""   },
-
-    { .type = OP_ACOT,      .dump_view = "arccot",   .func = Acot  ,    .proc_view = ""   },
-
-    { .type = OP_EQ,        .dump_view = "=",        .func = NULL  ,    .proc_view = ""   },
-
-    { .type = OP_IF,        .dump_view = "if",       .func = NULL  ,    .proc_view = ""   },
-
-    { .type = OP_OPER,      .dump_view = ";",        .func = NULL  ,    .proc_view = ""   },
-
-    { .type = OP_WHILE,     .dump_view = "while",    .func = NULL  ,    .proc_view = ""   },
-
-    { .type = OP_FUNC,      .dump_view = "function", .func = NULL  ,    .proc_view = ""   },
-
-    { .type = OP_PARAM,     .dump_view = "param",    .func = NULL  ,    .proc_view = ""   },
-
-    { .type = OP_RETURN,    .dump_view = "return",   .func = NULL  ,    .proc_view = ""   },
-
-    { .type = OP_CALL,      .dump_view = "call",     .func = NULL  ,    .proc_view = ""   },
-
-    { .type = OP_COMMA,     .dump_view = ",",        .func = NULL  ,    .proc_view = ""   },
-    
-    { .type = OP_LBR,       .dump_view = "(",        .func = NULL  ,    .proc_view = ""   },
-    { .type = OP_RBR,       .dump_view = ")",        .func = NULL  ,    .proc_view = ""   },
-    { .type = OP_FLBR,      .dump_view = "{",        .func = NULL  ,    .proc_view = ""   },
-    { .type = OP_FRBR,      .dump_view = "}",        .func = NULL  ,    .proc_view = ""   },
-
-    { .type = OP_INFO,      .dump_view = "info",     .func = NULL  ,    .proc_view = ""   },
+    { .type = OP_ADD,         .dump_view = "+",          .func = Sum   ,    .proc_view = "ADD" },
+         
+    { .type = OP_SUB,         .dump_view = "-",          .func = Sub   ,    .proc_view = "SUB" },
+         
+    { .type = OP_MUL,         .dump_view = "*",          .func = Mul   ,    .proc_view = "MUL" },
+         
+    { .type = OP_DIV,         .dump_view = "/",          .func = Div   ,    .proc_view = "DIV" },
+         
+    { .type = OP_POW,         .dump_view = "^",          .func = Pow   ,    .proc_view = "POW" },
+         
+    { .type = OP_LN,          .dump_view = "ln",         .func = Ln    ,    .proc_view = ""    },
+         
+    { .type = OP_LOG,         .dump_view = "log",        .func = Log   ,    .proc_view = ""    },
+         
+    { .type = OP_EXP,         .dump_view = "e ^",        .func = Exp   ,    .proc_view = ""    },
+         
+    { .type = OP_COS,         .dump_view = "cos",        .func = Cos   ,    .proc_view = ""    },
+         
+    { .type = OP_SIN,         .dump_view = "sin",        .func = Sin   ,    .proc_view = ""    },
+         
+    { .type = OP_TAN,         .dump_view = "tan",        .func = Tan   ,    .proc_view = ""    },
+     
+    { .type = OP_COT,         .dump_view = "cot",        .func = Cot   ,    .proc_view = ""    },
+     
+    { .type = OP_ASIN,        .dump_view = "arcsin",     .func = Asin  ,    .proc_view = ""    },
+     
+    { .type = OP_ACOS,        .dump_view = "arccos",     .func = Acos  ,    .proc_view = ""    },
+     
+    { .type = OP_ATAN,        .dump_view = "arctan",     .func = Atan  ,    .proc_view = ""    },
+     
+    { .type = OP_ACOT,        .dump_view = "arccot",     .func = Acot  ,    .proc_view = ""    },
+     
+    { .type = OP_EQUAL,       .dump_view = "==",         .func = NULL  ,    .proc_view = ""    },
+     
+    { .type = OP_LESS,        .dump_view = "<",          .func = NULL  ,    .proc_view = ""    },
+     
+    { .type = OP_ABOVE,       .dump_view = ">",          .func = NULL  ,    .proc_view = ""    },
+         
+    { .type = OP_EQ,          .dump_view = "=",          .func = NULL  ,    .proc_view = ""    },
+     
+    { .type = OP_IF,          .dump_view = "if",         .func = NULL  ,    .proc_view = ""    },
+     
+    { .type = OP_OPER,        .dump_view = ";",          .func = NULL  ,    .proc_view = ""    },
+     
+    { .type = OP_WHILE,       .dump_view = "while",      .func = NULL  ,    .proc_view = ""    },
+     
+    { .type = OP_FUNC,        .dump_view = "function",   .func = NULL  ,    .proc_view = ""    },
+     
+    { .type = OP_PARAM,       .dump_view = "param",      .func = NULL  ,    .proc_view = ""    },
+     
+    { .type = OP_RETURN,      .dump_view = "return",     .func = NULL  ,    .proc_view = "RET" },
+     
+    { .type = OP_CALL,        .dump_view = "call",       .func = NULL  ,    .proc_view = ""    },
+     
+    { .type = OP_INPUT,       .dump_view = "input",      .func = NULL  ,    .proc_view = "IN"  },
+         
+    { .type = OP_OUTPUT,      .dump_view = "output",     .func = NULL  ,    .proc_view = "OUT" },
+         
+    { .type = OP_PROCEDURE,   .dump_view = "procedure",  .func = NULL  ,    .proc_view = ""    }, 
+         
+    { .type = OP_FINISH,      .dump_view = "finish",     .func = NULL  ,    .proc_view = "RET" },
+     
+    { .type = OP_COMMA,       .dump_view = ",",          .func = NULL  ,    .proc_view = ""    },
+         
+    { .type = OP_LBR,         .dump_view = "(",          .func = NULL  ,    .proc_view = ""    },
+    { .type = OP_RBR,         .dump_view = ")",          .func = NULL  ,    .proc_view = ""    },
+    { .type = OP_FLBR,        .dump_view = "{",          .func = NULL  ,    .proc_view = ""    },
+    { .type = OP_FRBR,        .dump_view = "}",          .func = NULL  ,    .proc_view = ""    },
+     
+    { .type = OP_INFO,        .dump_view = "info",       .func = NULL  ,    .proc_view = ""    },
 };
 
 Tree_t* TreeCtor();
@@ -182,6 +207,10 @@ CodeError_t ReadBase(Tree_t* tree, const char* file_name);
 int get_file_size(const char* file_name);
 Tree_t* ParseTree(Tree_t* tree);
 
+void SelectTreeFunc(Node_t* node, Tree_t* tree);
+void AddFunc(Node_t* node, Tree_t* tree);
+int CheckTreeFunc(Node_t* node, Tree_t* tree);
+
 void SelectTreeVars(Node_t* node, Tree_t* tree);
 Var_t* VarCtor(char* name);
 int GetVarInd(Tree_t* tree, char* var_name);
@@ -191,10 +220,6 @@ Node_t* CopyNode(Node_t* node);
 ValueType* ValueOperCtor(int type);
 ValueType* ValueVarCtor(char* name);
 ValueType* ValueNumCtor(double value);
-
-double CalculatingTree(Tree_t* tree);
-double CalculatingNode(Node_t* node, Tree_t* tree);
-double CalcConstNode(Node_t* node, double value);
 
 double GetValue(Node_t* node);
 Node_t* GetLeft(Node_t* node);

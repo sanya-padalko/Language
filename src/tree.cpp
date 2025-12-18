@@ -10,12 +10,15 @@ Tree_t* TreeCtor() {
     tree->html_file_name = "dump.html";
     tree->dot_file_name = "tree.dot";
 
-    tree->var_cnt = 0;
-
     ValueType* value = (ValueType*)calloc(1, sizeof(ValueType));
     value->value = 0;
     tree->root = NodeCtor(NUM, value, NULL, NULL);
     tree->nodes_cnt = 1;
+    
+    tree->var_cnt = 0;
+    tree->func_cnt = 0;
+
+    tree->funcs = (char**)calloc(MAX_FUNC_SIZE, sizeof(char*));
 
     return tree;
 }
@@ -120,11 +123,41 @@ Tree_t* ParseTree(Tree_t* tree) {
     return tree;
 }
 
-void SelectTreeVars(Node_t* node, Tree_t* tree) {
-    if (!node || !tree) 
+void SelectTreeFunc(Node_t* node, Tree_t* tree) {
+    if (!node || !tree)
         return;
 
-    if (node->type == NUM)
+    if (node->type == OPER && (node->value->type == OP_FUNC || node->value->type == OP_PROCEDURE))
+        AddFunc(GetLeft(GetLeft(node)), tree);
+
+    SelectTreeFunc(GetLeft(node), tree);
+    SelectTreeFunc(GetRight(node), tree);
+}
+
+void AddFunc(Node_t* node, Tree_t* tree) {
+    if (!node || !tree)
+        return;
+
+    if (CheckTreeFunc(node, tree) == -1)
+        tree->funcs[tree->func_cnt++] = node->value->name;
+
+    return;
+}
+
+int CheckTreeFunc(Node_t* node, Tree_t* tree) {
+    if (!node || !tree)
+        return -1;
+
+    for (int i = 0; i < tree->func_cnt; ++i) {
+        if (!strcmp(tree->funcs[i], node->value->name))
+            return i;
+    }
+
+    return -1;
+}
+
+void SelectTreeVars(Node_t* node, Tree_t* tree) {
+    if (!node || !tree) 
         return;
 
     if (node->type == VAR) {
@@ -175,60 +208,6 @@ ValueType* ValueNumCtor(double value) {
     ValueType* val_type = (ValueType*)calloc(1, sizeof(ValueType));
     val_type->value = value;
     return val_type;
-}
-
-double CalculatingTree(Tree_t* tree) {
-    my_assert(tree, NULLPTR, NAN);
-
-    printf("Enter the values of vars:\n");
-    for (int i = 0; i < tree->var_cnt; ++i) {
-        printf("%s = ", tree->vars[i]->name);
-        scanf("%lg", &tree->vars[i]->value);
-    }
-
-    return CalculatingNode(tree->root, tree);
-}
-
-double CalculatingNode(Node_t* node, Tree_t* tree) {
-    if (!node)
-        return NAN;
-
-    if (node->type == NUM)
-        return node->value->value;
-
-    if (node->type == VAR) {
-        for (int i = 0; i < tree->var_cnt; ++i) {
-            if (!strcmp(tree->vars[i]->name, node->value->name))
-                return tree->vars[i]->value;
-        }
-
-        return NAN;
-    }
-
-    double left_res = CalculatingNode(node->left, tree);
-    double right_res = CalculatingNode(node->right, tree);
-
-    double result = opers[node->value->type].func(NUM_NODE(left_res), NUM_NODE(right_res));
-
-    return result;
-}
-
-double CalcConstNode(Node_t* node, double value) {
-    if (!node)
-        return NAN;
-
-    if (node->type == NUM)
-        return node->value->value;
-
-    if (node->type == VAR)
-        return value;
-
-    double left_res = CalcConstNode(node->left, value);
-    double right_res = CalcConstNode(node->right, value);
-
-    double result = opers[node->value->type].func(NUM_NODE(left_res), NUM_NODE(right_res));
-
-    return result;
 }
 
 Node_t* CopyNode(Node_t* node) {
