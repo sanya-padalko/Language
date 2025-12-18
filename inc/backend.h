@@ -16,6 +16,12 @@ void PrintFunc(Node_t* node, FILE* ex_file, Tree_t* tree);
 void PrintReturn(Node_t* node, FILE* ex_file, Tree_t* tree);
 void PrintCall(Node_t* node, FILE* ex_file, Tree_t* tree);
 void PrintEq(Node_t* node, FILE* ex_file, Tree_t* tree);
+
+void PrintInput(Node_t* node, FILE* ex_file, Tree_t* tree);
+void PrintOutput(Node_t* node, FILE* ex_file, Tree_t* tree);
+
+void PrintComp(Node_t* node, FILE* ex_file, Tree_t* tree);
+
 void PrintDefault(Node_t* node, FILE* ex_file, Tree_t* tree);
 
 void PrintPushVar(FILE* ex_file, int ind);
