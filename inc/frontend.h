@@ -10,9 +10,7 @@ void PrintAST(Node_t* node, FILE* ast_file, char* add_info);
 
 void PrintNum(Node_t* node, FILE* ast_file, char* add_info);
 void PrintVar(Node_t* node, FILE* ast_file, char* add_info);
-void PrintReturn(Node_t* node, FILE* ast_file, char* add_info);
 void PrintOper(Node_t* node, FILE* ast_file, char* add_info);
-void PrintCall(Node_t* node, FILE* ast_file, char* add_info);
 void PrintControlStruct(Node_t* node, FILE* ast_file, char* add_info);
 void PrintParam(Node_t* node, FILE* ast_file, char* add_info);
 void PrintDefault(Node_t* node, FILE* ast_file, char* add_info);

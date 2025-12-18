@@ -30,8 +30,9 @@ void PrintAST(Node_t* node, FILE* ast_file, char* add_info) {
         int oper = node->value->type;
         char old_c = add_info[0];
         switch (oper) {
-            case OP_IF:
             case OP_FUNC:
+            case OP_PROCEDURE:
+            case OP_IF:
             case OP_WHILE:
                 PrintControlStruct(node, ast_file, add_info);
                 break;
@@ -44,14 +45,6 @@ void PrintAST(Node_t* node, FILE* ast_file, char* add_info) {
                 PrintParam(node, ast_file, add_info);
                 break;
             
-            case OP_RETURN:
-                PrintReturn(node, ast_file, add_info);
-                break;
-
-            case OP_CALL:
-                PrintCall(node, ast_file, add_info);
-                break;
-
             default:
                 PrintDefault(node, ast_file, add_info);
                 break;
@@ -86,15 +79,6 @@ void PrintVar(Node_t* node, FILE* ast_file, char* add_info) {
     add_info[0] = old_c;
 }
 
-void PrintReturn(Node_t* node, FILE* ast_file, char* add_info) {
-    fprintf(ast_file, "%s( return ", add_info);
-    add_info[0] = '\0';
-    PrintAST(node->left, ast_file, add_info);
-    fprintf(ast_file, " ");
-    PrintAST(node->right, ast_file, add_info);
-    fprintf(ast_file, " )");
-}
-
 void PrintOper(Node_t* node, FILE* ast_file, char* add_info) {
     int len = strlen(add_info);
     int oper = node->value->type;
@@ -106,15 +90,6 @@ void PrintOper(Node_t* node, FILE* ast_file, char* add_info) {
     PrintAST(node->right, ast_file, add_info);
     add_info[len] = '\0';
     fprintf(ast_file, "\n%s)", add_info);
-}
-
-void PrintCall(Node_t* node, FILE* ast_file, char* add_info) {
-    fprintf(ast_file, "%s( call ", add_info);
-    add_info[0] = '\0';
-    PrintAST(node->left, ast_file, add_info);
-    fprintf(ast_file, " ");
-    PrintAST(node->right, ast_file, add_info);
-    fprintf(ast_file, " )");
 }
 
 void PrintControlStruct(Node_t* node, FILE* ast_file, char* add_info) {
@@ -146,5 +121,5 @@ void PrintDefault(Node_t* node, FILE* ast_file, char* add_info) {
     fprintf(ast_file, " ");
     add_info[0] = '\0';
     PrintAST(node->right, ast_file, add_info);
-    fprintf(ast_file, " )", opers);
+    fprintf(ast_file, " )");
 }
