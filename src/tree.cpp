@@ -123,11 +123,13 @@ Tree_t* ParseTree(Tree_t* tree) {
     return tree;
 }
 
+#define IS_FUNC(node) (node && (node)->type == OPER && ((node)->value->type == OP_FUNC || (node)->value->type == OP_PROCEDURE))
+
 void SelectTreeFunc(Node_t* node, Tree_t* tree) {
     if (!node || !tree)
         return;
 
-    if (node->type == OPER && (node->value->type == OP_FUNC || node->value->type == OP_PROCEDURE))
+    if (IS_FUNC(node))
         AddFunc(GetLeft(GetLeft(node)), tree);
 
     SelectTreeFunc(GetLeft(node), tree);
@@ -166,8 +168,15 @@ void SelectTreeVars(Node_t* node, Tree_t* tree) {
         return;
     }
 
-    SelectTreeVars(node->left, tree);
-    SelectTreeVars(node->right, tree);
+    if (node->type == OPER && (node->value->type == OP_CALL || node->value->type == OP_INFO)) {
+        SelectTreeVars(node->right, tree);
+        return;
+    }
+
+    if (!IS_FUNC(node->left))
+        SelectTreeVars(node->left, tree);
+    if (!IS_FUNC(node->right))
+        SelectTreeVars(node->right, tree);
 
     return;
 }

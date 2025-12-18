@@ -124,7 +124,7 @@ void PrintFunc(Node_t* node, FILE* ex_file, Tree_t* tree) {
     SelectTreeVars(GetRight(GetLeft(node)), params);
 
     for (int i = params->var_cnt - 1; i >= 0; --i) {
-        PrintPopVar(ex_file, i + 1);
+        PrintPopVar(ex_file, i);
     }
 
     Tree_t* subtree = TreeCtor();
@@ -147,16 +147,16 @@ void PrintCall(Node_t* node, FILE* ex_file, Tree_t* tree) {
 
     fprintf(ex_file,    "\n"
                         "PUSHR RBX\n"
-                        "PUSH 20\n"
+                        "PUSH %d\n"
                         "ADD\n"
                         "POPR RBX\n"
                         "\n"
                         "CALL :%s\n"
                         "\n"
                         "PUSHR RBX\n"
-                        "PUSH 20\n"
+                        "PUSH %d\n"
                         "SUB\n"
-                        "POPR RBX\n\n", GetLeft(node)->value->name);
+                        "POPR RBX\n\n", tree->var_cnt, GetLeft(node)->value->name, tree->var_cnt);
 }
 
 void PrintComma(Node_t* node, FILE* ex_file, Tree_t* tree) {
