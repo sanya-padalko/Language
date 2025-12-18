@@ -181,6 +181,16 @@ Node_t* ParseAST(Node_t** tokens, int* ind) {
         Node_t* node = tokens[*ind];
         ++*ind;
 
+        if (node->type == VAR) {
+            for (int i = 0; i < OPER_CNT; ++i) {
+                if (!strcmp(node->value->name, opers[i].dump_view)) {
+                    node->type = OPER;
+                    node->value->type = opers[i].type;
+                    break;
+                }
+            }
+        }
+
         node->left = ParseAST(tokens, ind);
         node->right = ParseAST(tokens, ind);
 
