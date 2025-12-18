@@ -24,18 +24,15 @@ int main() {
     Frontend(tree->root, ast_file);
     DUMP(tree, NOTHING, "Program");
 
-    SelectTreeVars(tree->root, tree);
-
     Tree_t* ast = GetTreeAST(ast_file);
     DUMP(ast, NOTHING, "AST");
 
+    SelectTreeVars(ast->root, ast);
+    SelectTreeFunc(ast->root, ast);
+
     FILE* program_file = fopen(assem_file, "w");
     Backend(ast->root, program_file, ast);
-    fprintf(program_file,   "PUSH 0\n"
-                            "POPR RFX\n"
-                            "PUSHM [RFX]\n"
-                            "OUT\n"
-                            "HLT\n");
+    fprintf(program_file, "HLT\n");
     fclose(program_file);
 
     assembler_t assem = {};

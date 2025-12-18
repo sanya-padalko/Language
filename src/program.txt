@@ -1,11 +1,21 @@
-popa = 10;
+input popa;
+
+popa = popa + (popa == 5) - (popa > 3);
+
+procedure printing (param n) {
+    output n;
+    finish;
+};
 
 function mulling ( param a, param ext ) {
     if (a) return 1;
 
+    call printing (a);
     b = a - 1;
-    a = a * call mulling ( b, b );
+    a = a * call mulling ( b, ext );
     return a;
 };
 
 popa = call mulling (popa, popa);
+
+output popa;
