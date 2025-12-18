@@ -43,12 +43,15 @@ void Backend(Node_t* node, FILE* ex_file, Tree_t* tree) {
         case OP_OUTPUT:
             PrintOutput(node, ex_file, tree);
             break;
+        case OP_COMMA:
+            PrintComma(node, ex_file, tree);
+            break;
         case OP_EQUAL:
         case OP_LESS:
         case OP_ABOVE:
             PrintComp(node, ex_file, tree);
             break;
-
+        
         default:
             PrintDefault(node, ex_file, tree);
     }
@@ -134,26 +137,13 @@ void PrintFunc(Node_t* node, FILE* ex_file, Tree_t* tree) {
     fprintf(ex_file, "\n:after_%s\n", func_name);
 }
 
-void PrintArgues(Node_t* node, FILE* ex_file, Tree_t* tree) {
-    if (!node)
-        return;
-
-    if (node->type == VAR) {
-        int ind = GetVarInd(tree, node->value->name);
-        PrintPushVar(ex_file, ind);
-    }
-
-    PrintArgues(GetLeft(node), ex_file, tree);
-    PrintArgues(GetRight(node), ex_file, tree);
-}
-
 void PrintCall(Node_t* node, FILE* ex_file, Tree_t* tree) {
     if (CheckTreeFunc(GetLeft(node), tree) == -1) {
         printf("Calling a non-existent function or procedure: %s\n", GetLeft(node)->value->name);
         return;
     }
 
-    PrintArgues(GetRight(node), ex_file, tree);
+    Backend(GetRight(node), ex_file, tree);
 
     fprintf(ex_file,    "\n"
                         "PUSHR RBX\n"
@@ -167,6 +157,11 @@ void PrintCall(Node_t* node, FILE* ex_file, Tree_t* tree) {
                         "PUSH 20\n"
                         "SUB\n"
                         "POPR RBX\n\n", GetLeft(node)->value->name);
+}
+
+void PrintComma(Node_t* node, FILE* ex_file, Tree_t* tree) {
+    Backend(GetLeft(node), ex_file, tree);
+    Backend(GetRight(node), ex_file, tree);
 }
 
 void PrintPushVar(FILE* ex_file, int ind) {

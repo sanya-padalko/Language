@@ -20,6 +20,7 @@ void PrintEq(Node_t* node, FILE* ex_file, Tree_t* tree);
 void PrintInput(Node_t* node, FILE* ex_file, Tree_t* tree);
 void PrintOutput(Node_t* node, FILE* ex_file, Tree_t* tree);
 
+void PrintComma(Node_t* node, FILE* ex_file, Tree_t* tree);
 void PrintComp(Node_t* node, FILE* ex_file, Tree_t* tree);
 
 void PrintDefault(Node_t* node, FILE* ex_file, Tree_t* tree);
