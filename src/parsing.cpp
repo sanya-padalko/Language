@@ -637,6 +637,20 @@ Node_t* GetP(Node_t** tokens, int* ind) {
         Node_t* name = NULL;
 
         switch (oper) {
+            case OP_SQRT:
+                ++*ind;
+                if (!CHECK_TOKEN(tokens[*ind], OP_LBR))
+                    return NULL;
+                ++*ind;
+
+                node = GetE(tokens, ind);
+                if (!CHECK_TOKEN(tokens[*ind], OP_RBR))
+                    return NULL;
+                ++*ind;
+
+                END();
+                return OP_NODE(OP_SQRT, NULL, node);
+                
             case OP_LN:
                 ++*ind;
                 if (!CHECK_TOKEN(tokens[*ind], OP_LBR))

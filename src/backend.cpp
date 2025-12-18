@@ -82,7 +82,7 @@ void PrintIf(Node_t* node, FILE* ex_file, Tree_t* tree) {
     Backend(node->left, ex_file, tree);
     fprintf(ex_file,    "\n"
                         "PUSH 0\n"
-                        "JNE :endif_%d\n", if_ind);
+                        "JE :endif_%d\n", if_ind);
 
     Backend(node->right, ex_file, tree);
     fprintf(ex_file,    ":endif_%d\n", if_ind);

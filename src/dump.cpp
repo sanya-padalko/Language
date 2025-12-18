@@ -58,7 +58,10 @@ void RecDump(Node_t* root, FILE* dot_file) {
     fprintf(dot_file, "\n\t\t<TR>\n\t\t\t<TD> ");
     if (root->type == OPER) {
         fprintf(dot_file, "OPER: ");
-        fprintf(dot_file, "%s", opers[root->value->type].dump_view);
+        if (OP_EQUAL <= root->value->type && root->value->type <= OP_ABOVE)
+            fprintf(dot_file, "%d", root->value->type);
+        else
+            fprintf(dot_file, "%s", opers[root->value->type].dump_view);
     } 
     else if (root->type == NUM) {
         fprintf(dot_file, "NUM: ");

@@ -32,6 +32,14 @@ double Pow(Node_t* left, Node_t* right) {
     return pow(GetValue(left), GetValue(right));
 }
 
+double Sqrt(Node_t* left, Node_t* right) {
+    double value = GetValue(right);
+    if (value < 0)
+        return NAN;
+
+    return sqrt(value);
+}
+
 double Ln(Node_t* left, Node_t* right) {
     double a = GetValue(right);
 

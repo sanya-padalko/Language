@@ -15,6 +15,7 @@ double Ln(Node_t* left, Node_t* right);
 double Log(Node_t* left, Node_t* right);
 double Exp(Node_t* left, Node_t* right);
 double Pow(Node_t* left, Node_t* right);
+double Sqrt(Node_t* left, Node_t* right);
 double Tan(Node_t* left, Node_t* right);
 double Cot(Node_t* left, Node_t* right);
 double Acos(Node_t* left, Node_t* right);
