@@ -28,17 +28,25 @@ Node_t* GetG(Node_t** tokens, int* ind);
 Node_t* GetOp(Node_t** tokens, int* ind);
 
 Node_t* GetFunc(Node_t** tokens, int* ind);
+Node_t* GetProcedure(Node_t** tokens, int* ind);
 Node_t* GetParams(Node_t** tokens, int* ind);
 Node_t* GetParam(Node_t** tokens, int* ind);
+
 Node_t* GetReturn(Node_t** tokens, int* ind);
+Node_t* GetFinish(Node_t** tokens, int* ind);
+
 Node_t* GetCall(Node_t** tokens, int* ind);
 Node_t* GetArgues(Node_t** tokens, int* ind);
+
+Node_t* GetInput(Node_t** tokens, int* ind);
+Node_t* GetOutput(Node_t** tokens, int* ind);
 
 Node_t* GetWhile(Node_t** tokens, int* ind);
 Node_t* GetIf(Node_t** tokens, int* ind);
 
 Node_t* GetA(Node_t** tokens, int* ind);
 Node_t* GetE(Node_t** tokens, int* ind);
+Node_t* GetSimple(Node_t** tokens, int* ind);
 Node_t* GetT(Node_t** tokens, int* ind);
 Node_t* GetPower(Node_t** tokens, int* ind);
 Node_t* GetP(Node_t** tokens, int* ind);

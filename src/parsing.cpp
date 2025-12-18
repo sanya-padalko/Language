@@ -144,15 +144,23 @@ Node_t* GetOp(Node_t** tokens, int* ind) {
         case OP_FUNC:
             node = GetFunc(tokens, ind);
             break;
+        case OP_PROCEDURE:
+            node = GetProcedure(tokens, ind);
+            break;
         case OP_RETURN:
             node = GetReturn(tokens, ind);
             break;
+        case OP_FINISH:
+            node = GetFinish(tokens, ind);
+            break;
         case OP_CALL:
             node = GetCall(tokens, ind);
-            if (!CHECK_TOKEN(tokens[*ind], OP_OPER))
-                printf("There isn't operation's ended symbol\n");
-            else
-                ++*ind;
+            break;
+        case OP_INPUT:
+            node = GetInput(tokens, ind);
+            break;
+        case OP_OUTPUT:
+            node = GetOutput(tokens, ind);
             break;
         case OP_FLBR:
             ++*ind;
@@ -166,23 +174,22 @@ Node_t* GetOp(Node_t** tokens, int* ind) {
 
                 node = OP_NODE(OP_OPER, c(node), c(node2));
             }
-
             ++*ind;
+
             if (!CHECK_TOKEN(tokens[*ind], OP_OPER)) {
                 printf("There isn't operation's ended symbol\n");
-                return node;
+                return NULL;
             }
-            else {
-                ++*ind;
-            }
+            ++*ind;
 
             break;
         case -1:
             node = GetA(tokens, ind);
-            if (!CHECK_TOKEN(tokens[*ind], OP_OPER))
+            if (!CHECK_TOKEN(tokens[*ind], OP_OPER)) {
                 printf("There isn't operation's ended symbol\n");
-            else
-                ++*ind;
+                return NULL;
+            }
+            ++*ind;
                 
             return node;
         
@@ -202,19 +209,15 @@ Node_t* GetFunc(Node_t** tokens, int* ind) {
         PrintValueNode(tokens[*ind]);
         return NULL;
     }
-
     ++*ind;
 
-    Node_t* name = NULL;
-    if (tokens[*ind]->type == VAR) {
-        name = tokens[*ind];
-        ++*ind;
-    }
-    else {
+    Node_t* name = tokens[*ind];
+    if (name->type != VAR) {
         printf("wrong token: ");
         PrintValueNode(tokens[*ind]);
         return NULL;
     }
+    ++*ind;
 
     Node_t* params = GetParams(tokens, ind);
 
@@ -224,6 +227,33 @@ Node_t* GetFunc(Node_t** tokens, int* ind) {
 
     END();
     return OP_NODE(OP_FUNC, OP_NODE(OP_INFO, c(name), c(params)), c(func_body));
+}
+
+Node_t* GetProcedure(Node_t** tokens, int* ind) {
+    START();
+    if (!CHECK_TOKEN(tokens[*ind], OP_PROCEDURE)) {
+        printf("(parsing procedure) expected \"procedure\", but getting: ");
+        PrintValueNode(tokens[*ind]);
+        return NULL;
+    }
+    ++*ind;
+
+    Node_t* name = tokens[*ind];
+    if (name->type != VAR) {
+        printf("wrong token: ");
+        PrintValueNode(tokens[*ind]);
+        return NULL;
+    }
+    ++*ind;
+
+    Node_t* params = GetParams(tokens, ind);
+
+    Node_t* proc_body = GetOp(tokens, ind);
+    if (!proc_body)
+        return NULL;
+
+    END();
+    return OP_NODE(OP_PROCEDURE, OP_NODE(OP_INFO, c(name), c(params)), c(proc_body));
 }
 
 Node_t* GetReturn(Node_t** tokens, int* ind) {
@@ -247,6 +277,26 @@ Node_t* GetReturn(Node_t** tokens, int* ind) {
     ++*ind;
 
     return OP_NODE(OP_RETURN, NULL, c(node));
+}
+
+Node_t* GetFinish(Node_t** tokens, int* ind) {
+    START();
+    if (!CHECK_TOKEN(tokens[*ind], OP_FINISH)) {
+        printf("(parsing finish) expected \"finish\", but getting: ");
+        PrintValueNode(tokens[*ind]);
+        return NULL;
+    }
+    ++*ind;
+
+    if (!CHECK_TOKEN(tokens[*ind], OP_OPER)) {
+        printf("(parsing finish) missing \';\': ");
+        PrintValueNode(tokens[*ind]);
+        return NULL;
+    }
+    ++*ind;
+
+    END();
+    return OP_NODE(OP_FINISH, NULL, NULL);
 }
 
 Node_t* GetParams(Node_t** tokens, int* ind) {
@@ -314,15 +364,21 @@ Node_t* GetCall(Node_t** tokens, int* ind) {
     }
     ++*ind;
 
-    Node_t* name = NULL;
-    if (tokens[*ind]->type != VAR)
+    Node_t* name = tokens[*ind];
+    if (name->type != VAR)
         return NULL;
+    ++*ind;
 
-    name = tokens[*ind];
+    Node_t* args = GetArgues(tokens, ind);
+
+    if (!CHECK_TOKEN(tokens[*ind], OP_OPER)) {
+        printf("There isn't call's ended symbol\n");
+        return NULL;
+    }
     ++*ind;
 
     END();
-    return OP_NODE(OP_CALL, name, GetArgues(tokens, ind));
+    return OP_NODE(OP_CALL, name, args);
 }
 
 Node_t* GetArgues(Node_t** tokens, int* ind) {
@@ -334,26 +390,12 @@ Node_t* GetArgues(Node_t** tokens, int* ind) {
     }
     ++*ind;
 
-    if (tokens[*ind]->type != VAR) {
-        printf("(parsing argues) expected VAR, but getting: ");
-        PrintValueNode(tokens[*ind]);
-        return NULL;
-    }
-
-    Node_t* node = tokens[*ind];
-    ++*ind;
+    Node_t* node = GetE(tokens, ind);
 
     while (CHECK_TOKEN(tokens[*ind], OP_COMMA)) {
         ++*ind;
-        
-        if (tokens[*ind]->type != VAR) {
-            printf("(parsing argues) expected VAR, but getting: ");
-            PrintValueNode(tokens[*ind]);
-            return NULL;
-        }
 
-        Node_t* node2 = tokens[*ind];
-        ++*ind;
+        Node_t* node2 = GetE(tokens, ind);
 
         node = OP_NODE(OP_COMMA, c(node), c(node2));
     }
@@ -367,6 +409,54 @@ Node_t* GetArgues(Node_t** tokens, int* ind) {
 
     END();
     return node;
+}
+
+Node_t* GetInput(Node_t** tokens, int* ind) {
+    START();
+    if (!CHECK_TOKEN(tokens[*ind], OP_INPUT)) {
+        printf("(parsing input) expected \"input\", but getting: ");
+        PrintValueNode(tokens[*ind]);
+        return NULL;
+    }
+    ++*ind;
+
+    Node_t* node = tokens[*ind];
+    if (node->type != VAR) {
+        printf("(parsing input) expected \"input\", but getting: ");
+        PrintValueNode(tokens[*ind]);
+        return NULL;
+    }
+    ++*ind;
+
+    if (!CHECK_TOKEN(tokens[*ind], OP_OPER)) {
+        printf("There isn't operation's ended symbol\n");
+        return NULL;
+    }
+    ++*ind;
+
+    END();
+    return OP_NODE(OP_INPUT, NULL, c(node));
+}
+
+Node_t* GetOutput(Node_t** tokens, int* ind) {
+    START();
+    if (!CHECK_TOKEN(tokens[*ind], OP_OUTPUT)) {
+        printf("(parsing output) expected \"output\", but getting: ");
+        PrintValueNode(tokens[*ind]);
+        return NULL;
+    }
+    ++*ind;
+
+    Node_t* node = GetE(tokens, ind);
+    
+    if (!CHECK_TOKEN(tokens[*ind], OP_OPER)) {
+        printf("There isn't operation's ended symbol\n");
+        return NULL;
+    }
+    ++*ind;
+
+    END();
+    return OP_NODE(OP_OUTPUT, NULL, c(node));
 }
 
 Node_t* GetWhile(Node_t** tokens, int* ind) {
@@ -440,6 +530,27 @@ Node_t* GetA(Node_t** tokens, int* ind) {
 
 Node_t* GetE(Node_t** tokens, int* ind) {
     START();
+    Node_t* node = GetSimple(tokens, ind);
+
+    while (CHECK_TOKEN(tokens[*ind], OP_EQUAL) || CHECK_TOKEN(tokens[*ind], OP_LESS) || CHECK_TOKEN(tokens[*ind], OP_ABOVE)) {
+        int op = tokens[*ind]->value->type;
+        ++*ind;
+
+        Node_t* node2 = GetSimple(tokens, ind);
+        if (op == OP_EQUAL)
+            node = OP_NODE(OP_EQUAL, c(node), c(node2));
+        else if (op == OP_LESS)
+            node = OP_NODE(OP_LESS, c(node), c(node2));
+        else 
+            node = OP_NODE(OP_ABOVE, c(node), c(node2));
+    }
+
+    END();
+    return node;
+}
+
+Node_t* GetSimple(Node_t** tokens, int* ind) {
+    START();
     Node_t* node = GetT(tokens, ind);
 
     while (CHECK_TOKEN(tokens[*ind], OP_ADD) || CHECK_TOKEN(tokens[*ind], OP_SUB) || CHECK_TOKEN(tokens[*ind], OP_POW)) {
@@ -502,9 +613,9 @@ Node_t* GetP(Node_t** tokens, int* ind) {
 
         if (!CHECK_TOKEN(tokens[*ind], OP_RBR))
             return NULL;
-
         ++*ind;
 
+        END();
         return node;
     }
 
@@ -516,6 +627,7 @@ Node_t* GetP(Node_t** tokens, int* ind) {
         else {
             Node_t* node = tokens[*ind];
             ++*ind;
+            END();
             return node;
         }
 
@@ -609,10 +721,10 @@ Node_t* GetP(Node_t** tokens, int* ind) {
         return NULL;
     }
     
-    END();
     Node_t* node = tokens[*ind];
     ++*ind;
 
+    END();
     return node;
 }
 
