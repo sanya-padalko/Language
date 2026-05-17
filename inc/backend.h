@@ -6,6 +6,7 @@
 struct Tree_t;
 struct Node_t;
 
+void PrintFileStart(FILE* ex_file);
 void Backend(Node_t* node, FILE* ex_file, Tree_t* tree);
 
 void PrintNum(Node_t* node, FILE* ex_file);

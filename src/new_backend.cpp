@@ -1,6 +1,13 @@
 #include "backend.h"
 #include "tree.h"
 
+void PrintFileStart(FILE* ex_file) {
+	fprintf(ex_file, "section .rodata							\n"
+					 "    msg_format_out: db \"%%lg\", 10, 0	\n\n"
+					 "section .text								\n");
+}
+
+
 void Backend(Node_t* node, FILE* ex_file, Tree_t* tree) {
     if (!node)
         return;
@@ -185,6 +192,8 @@ void PrintOutput(Node_t* node, FILE* ex_file, Tree_t* tree) {
         "    ; ------------------------\n\n");
 }
 
+/* Переписать
+
 void PrintDraw(Node_t* node, FILE* ex_file, Tree_t* tree) {
     fprintf(ex_file, "DRAW\n");
 }
@@ -195,10 +204,17 @@ void PrintPutm(Node_t* node, FILE* ex_file, Tree_t* tree) {
     fprintf(ex_file, "POPR RDX\n");
     fprintf(ex_file, "POPM [RDX]\n");
 }
+
+*/
+
 void PrintEnd(Node_t* node, FILE* ex_file, Tree_t* tree) {
     Backend(GetLeft(node), ex_file, tree);
     Backend(GetRight(node), ex_file, tree);
-    fprintf(ex_file, "HLT\n");
+    
+	fprintf(ex_file, "    mov rax, 0		; код возврата\n"
+                     "    mov rsp, rbp		\n"
+                     "    pop rbp			\n"
+                     "    ret				\n");
 }
 
 void PrintFunc(Node_t* node, FILE* ex_file, Tree_t* tree) {
