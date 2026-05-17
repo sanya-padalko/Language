@@ -4,16 +4,20 @@
 #include "processor.h"
 #include "frontend.h"
 #include "backend.h"
+#include "reverse-end.h"
 
-int main() {
+int main(int argc, char* argv[]) {
     const char* real_data = GetTime();
     MakeDir(real_data);
 
-    const char* program = "../program.txt";
+    const char* program = "../../programs/program.txt";
     const char* ast_file = "ast.txt";
     const char* assem_file = "assem.txt";
     const char* ex_file = "ex_file.txt";
     const char* listing_file = "listing.txt";
+
+    if (argc > 1) 
+        program = argv[1];
 
     Tree_t* tree = TreeCtor();
     ReadBase(tree, program);
@@ -29,6 +33,8 @@ int main() {
 
     SelectTreeVars(ast->root, ast);
     SelectTreeFunc(ast->root, ast);
+
+    TreeCodeGenerate(ast);
 
     FILE* program_file = fopen(assem_file, "w");
     Backend(ast->root, program_file, ast);

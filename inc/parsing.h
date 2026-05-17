@@ -34,6 +34,8 @@ Node_t* GetParam(Node_t** tokens, int* ind);
 
 Node_t* GetReturn(Node_t** tokens, int* ind);
 Node_t* GetFinish(Node_t** tokens, int* ind);
+Node_t* GetDraw(Node_t** tokens, int* ind);
+Node_t* GetPutm(Node_t** tokens, int* ind);
 
 Node_t* GetCall(Node_t** tokens, int* ind);
 Node_t* GetArgues(Node_t** tokens, int* ind);

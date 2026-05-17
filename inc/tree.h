@@ -65,14 +65,17 @@ enum OPERATIONS {
     OP_OUTPUT    =  29,
     OP_PROCEDURE =  30,
     OP_FINISH    =  31,
-    OP_COMMA     =  32,
+    OP_DRAW      =  32,
+    OP_PUTM      =  33,
+    OP_END       =  34,
+    OP_COMMA     =  35,
 
-    OP_LBR       =  33,
-    OP_RBR       =  34,
-    OP_FLBR      =  35,
-    OP_FRBR      =  36,
+    OP_LBR       =  36,
+    OP_RBR       =  37,
+    OP_FLBR      =  38,
+    OP_FRBR      =  39,
 
-    OP_INFO      =  37,
+    OP_INFO      =  40,
 
     OPER_CNT
 };
@@ -117,6 +120,7 @@ struct Tree_t {
 struct Operation_t {
     int type;
 
+    const char* lang_view;
     const char* dump_view;
 
     double (*func) (Node_t*, Node_t*);
@@ -125,79 +129,129 @@ struct Operation_t {
 };
 
 const Operation_t opers[] = {
-    { .type = OP_ADD,         .dump_view = "+",          .func = Sum   ,    .proc_view = "ADD" },
-         
-    { .type = OP_SUB,         .dump_view = "-",          .func = Sub   ,    .proc_view = "SUB" },
-         
-    { .type = OP_MUL,         .dump_view = "*",          .func = Mul   ,    .proc_view = "MUL" },
-         
-    { .type = OP_DIV,         .dump_view = "/",          .func = Div   ,    .proc_view = "DIV" },
-         
-    { .type = OP_POW,         .dump_view = "^",          .func = Pow   ,    .proc_view = "POW" },
+    { .type = OP_ADD,         .lang_view = "смешайте_с",       
+        .dump_view = "+",          .func = Sum   ,    .proc_view = "ADD" },
+
+    { .type = OP_SUB,         .lang_view = "ложкой_отделите_от",   
+        .dump_view = "-",          .func = Sub   ,    .proc_view = "SUB" },
+
+    { .type = OP_MUL,         .lang_view = "перемешайте_в_блендере с",              
+        .dump_view = "*",          .func = Mul   ,    .proc_view = "MUL" },
+
+    { .type = OP_DIV,         .lang_view = "отделите_ситом_от",              
+        .dump_view = "/",          .func = Div   ,    .proc_view = "DIV" },
+
+    { .type = OP_POW,         .lang_view = "порций",              
+        .dump_view = "^",          .func = Pow   ,    .proc_view = "POW" },
+
+    { .type = OP_SQRT,        .lang_view = "извлечь_содержимое_из",              
+        .dump_view = "sqrt",       .func = Sqrt  ,    .proc_view = "SQRT"},
+
+    { .type = OP_LN,          .lang_view = "ln",              
+        .dump_view = "ln",         .func = Ln    ,    .proc_view = ""    },
+
+    { .type = OP_LOG,         .lang_view = "log",              
+        .dump_view = "log",        .func = Log   ,    .proc_view = ""    },
+
+    { .type = OP_EXP,         .lang_view = "e ^",              
+        .dump_view = "e ^",        .func = Exp   ,    .proc_view = ""    },
+
+    { .type = OP_COS,         .lang_view = "cos",              
+        .dump_view = "cos",        .func = Cos   ,    .proc_view = ""    },
+
+    { .type = OP_SIN,         .lang_view = "sin",              
+        .dump_view = "sin",        .func = Sin   ,    .proc_view = ""    },
+
+    { .type = OP_TAN,         .lang_view = "tan",              
+        .dump_view = "tan",        .func = Tan   ,    .proc_view = ""    },
+
+    { .type = OP_COT,         .lang_view = "cot",              
+        .dump_view = "cot",        .func = Cot   ,    .proc_view = ""    },
+
+    { .type = OP_ASIN,        .lang_view = "arcsin",              
+        .dump_view = "arcsin",     .func = Asin  ,    .proc_view = ""    },
+
+    { .type = OP_ACOS,        .lang_view = "arccos",              
+        .dump_view = "arccos",     .func = Acos  ,    .proc_view = ""    },
+
+    { .type = OP_ATAN,        .lang_view = "arctan",              
+        .dump_view = "arctan",     .func = Atan  ,    .proc_view = ""    },
+
+    { .type = OP_ACOT,        .lang_view = "arccot",              
+        .dump_view = "arccot",     .func = Acot  ,    .proc_view = ""    },
+
+    { .type = OP_EQUAL,       .lang_view = "нравится_также,_как_и",              
+        .dump_view = "==",         .func = NULL  ,    .proc_view = ""    },
+
+    { .type = OP_LESS,        .lang_view = "нравится_меньше,_чем",              
+        .dump_view = "<",          .func = NULL  ,    .proc_view = ""    },
+
+    { .type = OP_ABOVE,       .lang_view = "нравится_больше,_чем",              
+        .dump_view = ">",          .func = NULL  ,    .proc_view = ""    },
+
+    { .type = OP_EQ,          .lang_view = ",_всего граммов",              
+        .dump_view = "=",          .func = NULL  ,    .proc_view = ""    },
+
+    { .type = OP_IF,          .lang_view = "Далее_на_вкус,_если",              
+        .dump_view = "if",         .func = NULL  ,    .proc_view = ""    },
+
+    { .type = OP_OPER,        .lang_view = ";",              
+        .dump_view = ";",          .func = NULL  ,    .proc_view = ""    },
+
+    { .type = OP_WHILE,       .lang_view = "Уберите_в_духовку_на_300 градусов._Держите,_пока",              
+        .dump_view = "while",      .func = NULL  ,    .proc_view = ""    },
+
+    { .type = OP_FUNC,        .lang_view = "Блюдо",              
+        .dump_view = "function",   .func = NULL  ,    .proc_view = ""    },
+
+    { .type = OP_PARAM,       .lang_view = "ингридиент:",              
+        .dump_view = "param",      .func = NULL  ,    .proc_view = ""    },
+
+    { .type = OP_RETURN,      .lang_view = "Блюдо_готово._Осталось:",              
+        .dump_view = "return",     .func = NULL  ,    .proc_view = "RET" },
+
+    { .type = OP_CALL,        .lang_view = "Приготовьте",              
+        .dump_view = "call",       .func = NULL  ,    .proc_view = ""    },
+
+    { .type = OP_INPUT,       .lang_view = "Достаньте_из_холодильника",              
+        .dump_view = "input",      .func = NULL  ,    .proc_view = "IN"  },
+
+    { .type = OP_OUTPUT,      .lang_view = "Аккуратно_выложите_на_тарелку",              
+        .dump_view = "output",     .func = NULL  ,    .proc_view = "OUT" },
+
+    { .type = OP_PROCEDURE,   .lang_view = "Закуска",              
+        .dump_view = "procedure",  .func = NULL  ,    .proc_view = ""    }, 
+
+    { .type = OP_FINISH,      .lang_view = "Закуска_готова",              
+        .dump_view = "finish",     .func = NULL  ,    .proc_view = "RET" },
     
-    { .type = OP_SQRT,        .dump_view = "sqrt",       .func = Sqrt  ,    .proc_view = "SQRT"},
-         
-    { .type = OP_LN,          .dump_view = "ln",         .func = Ln    ,    .proc_view = ""    },
-         
-    { .type = OP_LOG,         .dump_view = "log",        .func = Log   ,    .proc_view = ""    },
-         
-    { .type = OP_EXP,         .dump_view = "e ^",        .func = Exp   ,    .proc_view = ""    },
-         
-    { .type = OP_COS,         .dump_view = "cos",        .func = Cos   ,    .proc_view = ""    },
-         
-    { .type = OP_SIN,         .dump_view = "sin",        .func = Sin   ,    .proc_view = ""    },
-         
-    { .type = OP_TAN,         .dump_view = "tan",        .func = Tan   ,    .proc_view = ""    },
-     
-    { .type = OP_COT,         .dump_view = "cot",        .func = Cot   ,    .proc_view = ""    },
-     
-    { .type = OP_ASIN,        .dump_view = "arcsin",     .func = Asin  ,    .proc_view = ""    },
-     
-    { .type = OP_ACOS,        .dump_view = "arccos",     .func = Acos  ,    .proc_view = ""    },
-     
-    { .type = OP_ATAN,        .dump_view = "arctan",     .func = Atan  ,    .proc_view = ""    },
-     
-    { .type = OP_ACOT,        .dump_view = "arccot",     .func = Acot  ,    .proc_view = ""    },
-     
-    { .type = OP_EQUAL,       .dump_view = "==",         .func = NULL  ,    .proc_view = ""    },
-     
-    { .type = OP_LESS,        .dump_view = "<",          .func = NULL  ,    .proc_view = ""    },
-     
-    { .type = OP_ABOVE,       .dump_view = ">",          .func = NULL  ,    .proc_view = ""    },
-         
-    { .type = OP_EQ,          .dump_view = "=",          .func = NULL  ,    .proc_view = ""    },
-     
-    { .type = OP_IF,          .dump_view = "if",         .func = NULL  ,    .proc_view = ""    },
-     
-    { .type = OP_OPER,        .dump_view = ";",          .func = NULL  ,    .proc_view = ""    },
-     
-    { .type = OP_WHILE,       .dump_view = "while",      .func = NULL  ,    .proc_view = ""    },
-     
-    { .type = OP_FUNC,        .dump_view = "function",   .func = NULL  ,    .proc_view = ""    },
-     
-    { .type = OP_PARAM,       .dump_view = "param",      .func = NULL  ,    .proc_view = ""    },
-     
-    { .type = OP_RETURN,      .dump_view = "return",     .func = NULL  ,    .proc_view = "RET" },
-     
-    { .type = OP_CALL,        .dump_view = "call",       .func = NULL  ,    .proc_view = ""    },
-     
-    { .type = OP_INPUT,       .dump_view = "input",      .func = NULL  ,    .proc_view = "IN"  },
-         
-    { .type = OP_OUTPUT,      .dump_view = "output",     .func = NULL  ,    .proc_view = "OUT" },
-         
-    { .type = OP_PROCEDURE,   .dump_view = "procedure",  .func = NULL  ,    .proc_view = ""    }, 
-         
-    { .type = OP_FINISH,      .dump_view = "finish",     .func = NULL  ,    .proc_view = "RET" },
-     
-    { .type = OP_COMMA,       .dump_view = ",",          .func = NULL  ,    .proc_view = ""    },
-         
-    { .type = OP_LBR,         .dump_view = "(",          .func = NULL  ,    .proc_view = ""    },
-    { .type = OP_RBR,         .dump_view = ")",          .func = NULL  ,    .proc_view = ""    },
-    { .type = OP_FLBR,        .dump_view = "{",          .func = NULL  ,    .proc_view = ""    },
-    { .type = OP_FRBR,        .dump_view = "}",          .func = NULL  ,    .proc_view = ""    },
-     
-    { .type = OP_INFO,        .dump_view = "info",       .func = NULL  ,    .proc_view = ""    },
-};
+    { .type = OP_DRAW,        .lang_view = "Фото_блюда",              
+        .dump_view = "draw",     .func = NULL  ,      .proc_view = "DRAW"},
+    
+    { .type = OP_PUTM,        .lang_view = "Запомните_рецепт",              
+        .dump_view = "putm",     .func = NULL  ,      .proc_view = ""    },
+    
+    { .type = OP_END,         .lang_view = "Прибирайтесь",              
+        .dump_view = "end",      .func = NULL  ,      .proc_view = "HLT" },
+
+    { .type = OP_COMMA,       .lang_view = ",",              
+        .dump_view = ",",          .func = NULL  ,    .proc_view = ""    },
+
+    { .type = OP_LBR,         .lang_view = "",              
+        .dump_view = "(",          .func = NULL  ,    .proc_view = ""    },
+        
+    { .type = OP_RBR,         .lang_view = "",              
+        .dump_view = ")",          .func = NULL  ,    .proc_view = ""    },
+
+    { .type = OP_FLBR,        .lang_view = "",              
+        .dump_view = "{",          .func = NULL  ,    .proc_view = ""    },
+
+    { .type = OP_FRBR,        .lang_view = "",              
+        .dump_view = "}",          .func = NULL  ,    .proc_view = ""    },
+
+    { .type = OP_INFO,        .lang_view = "info",              
+        .dump_view = "info",       .func = NULL  ,    .proc_view = ""    },
+};  
 
 Tree_t* TreeCtor();
 Node_t* NodeCtor(TYPES type, ValueType* val_type, Node_t* left, Node_t* right);

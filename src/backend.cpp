@@ -46,6 +46,15 @@ void Backend(Node_t* node, FILE* ex_file, Tree_t* tree) {
         case OP_COMMA:
             PrintComma(node, ex_file, tree);
             break;
+        case OP_PUTM:
+            PrintPutm(node, ex_file, tree);
+            break;
+        case OP_END:
+            PrintEnd(node, ex_file, tree);
+            break;
+        case OP_DRAW:
+            PrintDraw(node, ex_file, tree);
+            break;
         case OP_EQUAL:
         case OP_LESS:
         case OP_ABOVE:
@@ -96,9 +105,11 @@ void PrintWhile(Node_t* node, FILE* ex_file, Tree_t* tree) {
 
     Backend(node->left, ex_file, tree);
     fprintf(ex_file,    "PUSH 0\n"
-                        "JNE :endwhile_%d\n"
-                        "JMP :beginwhile_%d\n"
-                        ":endwhile_%d\n\n", while_ind, while_ind, while_ind);
+                        "JE :endwhile_%d\n", while_ind);
+
+    Backend(node->right, ex_file, tree);
+    fprintf(ex_file,    "JMP :beginwhile_%d\n"
+                        ":endwhile_%d\n\n", while_ind, while_ind);
 }
 
 void PrintInput(Node_t* node, FILE* ex_file, Tree_t* tree) {
@@ -112,6 +123,22 @@ void PrintOutput(Node_t* node, FILE* ex_file, Tree_t* tree) {
     Backend(GetRight(node), ex_file, tree);
     
     fprintf(ex_file, "OUT\n");
+}
+
+void PrintDraw(Node_t* node, FILE* ex_file, Tree_t* tree) {
+    fprintf(ex_file, "DRAW\n");
+}
+
+void PrintPutm(Node_t* node, FILE* ex_file, Tree_t* tree) {
+    Backend(GetRight(node), ex_file, tree);
+    Backend(GetLeft(node), ex_file, tree);
+    fprintf(ex_file, "POPR RDX\n");
+    fprintf(ex_file, "POPM [RDX]\n");
+}
+void PrintEnd(Node_t* node, FILE* ex_file, Tree_t* tree) {
+    Backend(GetLeft(node), ex_file, tree);
+    Backend(GetRight(node), ex_file, tree);
+    fprintf(ex_file, "HLT\n");
 }
 
 void PrintFunc(Node_t* node, FILE* ex_file, Tree_t* tree) {

@@ -1,0 +1,18 @@
+procedure printing (param real) {
+    output real;
+    finish;
+};
+
+function mulling ( param a  ) {
+    if (a == 0) return 1;
+
+    call printing (a);
+    a = a * call mulling ( a - 1 );
+    return a;
+};
+
+input popa;
+
+popa = call mulling (popa);
+
+output popa;

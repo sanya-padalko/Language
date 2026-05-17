@@ -1,0 +1,11 @@
+input a;
+input b;
+input c;
+
+d = sqrt(b ^ 2 - 4 * a * c);
+
+p = (d - b) / (2 * a);
+q = (0 - d - b) / (2 * a);
+
+output p;
+output q;

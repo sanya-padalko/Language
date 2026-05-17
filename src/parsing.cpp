@@ -12,16 +12,6 @@
                                             SkipSpaces(ptr); \
                                         }
 
-#ifdef DEBUG
-#define FUNC_START(str) printf("%s:\n %s\n ------------\n", __FUNCTION__, str)
-#define START() printf("Enter to func: %s\n", __FUNCTION__)
-#define END()   printf(" --- Exit the func: %s\n", __FUNCTION__)
-#else
-#define FUNC_START(str)
-#define START() printf("Enter to func: %s\n", __FUNCTION__)
-#define END()   printf(" --- Exit the func: %s\n", __FUNCTION__)
-#endif
-
 Tokenizator_t* SelectTokens(const char** s) {
     Tokenizator_t* tok = (Tokenizator_t*)calloc(1, sizeof(Tokenizator_t));
     SkipSpaces(s);
@@ -52,6 +42,13 @@ Tokenizator_t* SelectTokens(const char** s) {
 }
 
 Node_t* SelectOper(const char** s) {
+    for (int i = OP_ADD; i <= OP_COMMA; ++i) {
+        if (EQUAL(*s, opers[i].lang_view)) {
+            *s += strlen(opers[i].lang_view);
+            return OP_NODE(opers[i].type, NULL, NULL);
+        }
+    }
+
     for (int i = OP_ADD; i <= OP_COMMA; ++i) {
         if (EQUAL(*s, opers[i].dump_view)) {
             *s += strlen(opers[i].dump_view);
@@ -94,14 +91,14 @@ Node_t* GetN(const char** s) {
 
     const char* old_s = *s;
     double val = 0;
+    int read_symb = 0;
 
-    while ('0' <= **s && **s <= '9') {
-        val = val * 10 + (double)(**s - '0');
-        ++*s;
-    }
+    sscanf(*s, "%lg%n", &val, &read_symb);
+    *s += read_symb;
 
-    if (*s == old_s) {
+    if (read_symb == 0) {
         SyntaxError("(parsing number) expected digit, but getting", **s);
+        return NULL;
     }
 
     SkipSpaces(s);
@@ -109,7 +106,6 @@ Node_t* GetN(const char** s) {
 }
 
 Node_t* GetG(Node_t** tokens, int* ind) {
-    START();
     Node_t* node = GetOp(tokens, ind);
 
     while (tokens[*ind]) {
@@ -120,12 +116,10 @@ Node_t* GetG(Node_t** tokens, int* ind) {
         node = OP_NODE(OP_OPER, c(node), c(node2));
     }
 
-    END();
     return node;
 }
 
 Node_t* GetOp(Node_t** tokens, int* ind) {
-    START();
     Node_t* node = NULL;
     Node_t* node2 = NULL;
 
@@ -161,6 +155,22 @@ Node_t* GetOp(Node_t** tokens, int* ind) {
             break;
         case OP_OUTPUT:
             node = GetOutput(tokens, ind);
+            break;
+        case OP_PUTM:
+            node = GetPutm(tokens, ind);
+            break;
+        case OP_END:
+            ++*ind;
+            node = OP_NODE(OP_END, NULL, NULL);
+
+            if (!CHECK_TOKEN(tokens[*ind], OP_OPER)) {
+                printf("There isn't operation's ended symbol\n");
+                return NULL;
+            }
+            ++*ind;
+            break;
+        case OP_DRAW:
+            node = GetDraw(tokens, ind);
             break;
         case OP_FLBR:
             ++*ind;
@@ -202,8 +212,41 @@ Node_t* GetOp(Node_t** tokens, int* ind) {
     return node;
 }
 
+Node_t* GetPutm(Node_t** tokens, int* ind) {
+    if (!CHECK_TOKEN(tokens[*ind], OP_PUTM)) {
+        printf("(parsing putm) expected \"function\", but getting: ");
+        PrintValueNode(tokens[*ind]);
+        return NULL;
+    }
+    ++*ind;
+    
+    Node_t* ind_node = tokens[*ind];
+    if (ind_node->type != VAR) {
+        printf("(parsing putm) expected VAR, but getting: ");
+        PrintValueNode(tokens[*ind]);
+        return NULL;
+    }
+    ++*ind;
+
+    Node_t* val_node = tokens[*ind];
+    if (val_node->type != NUM) {
+        printf("(parsing putm) expected NUM, but getting: ");
+        PrintValueNode(tokens[*ind]);
+        return NULL;
+    }
+    ++*ind;
+
+    if (!CHECK_TOKEN(tokens[*ind], OP_OPER)) {
+        printf("(parsing putm) expected \";\", but getting: ");
+        PrintValueNode(tokens[*ind]);
+        return NULL;
+    }
+    ++*ind;
+
+    return OP_NODE(OP_PUTM, ind_node, val_node);
+}
+
 Node_t* GetFunc(Node_t** tokens, int* ind) {
-    START();
     if (!CHECK_TOKEN(tokens[*ind], OP_FUNC)) {
         printf("(parsing function) expected \"function\", but getting: ");
         PrintValueNode(tokens[*ind]);
@@ -225,12 +268,10 @@ Node_t* GetFunc(Node_t** tokens, int* ind) {
     if (!func_body)
         return NULL;
 
-    END();
     return OP_NODE(OP_FUNC, OP_NODE(OP_INFO, c(name), c(params)), c(func_body));
 }
 
 Node_t* GetProcedure(Node_t** tokens, int* ind) {
-    START();
     if (!CHECK_TOKEN(tokens[*ind], OP_PROCEDURE)) {
         printf("(parsing procedure) expected \"procedure\", but getting: ");
         PrintValueNode(tokens[*ind]);
@@ -252,12 +293,10 @@ Node_t* GetProcedure(Node_t** tokens, int* ind) {
     if (!proc_body)
         return NULL;
 
-    END();
     return OP_NODE(OP_PROCEDURE, OP_NODE(OP_INFO, c(name), c(params)), c(proc_body));
 }
 
 Node_t* GetReturn(Node_t** tokens, int* ind) {
-    START();
     if (!CHECK_TOKEN(tokens[*ind], OP_RETURN)) {
         printf("(parsing return) expected \"return\", but getting: ");
         PrintValueNode(tokens[*ind]);
@@ -275,12 +314,10 @@ Node_t* GetReturn(Node_t** tokens, int* ind) {
         return NULL;
     }
     ++*ind;
-
     return OP_NODE(OP_RETURN, NULL, c(node));
 }
 
 Node_t* GetFinish(Node_t** tokens, int* ind) {
-    START();
     if (!CHECK_TOKEN(tokens[*ind], OP_FINISH)) {
         printf("(parsing finish) expected \"finish\", but getting: ");
         PrintValueNode(tokens[*ind]);
@@ -295,12 +332,10 @@ Node_t* GetFinish(Node_t** tokens, int* ind) {
     }
     ++*ind;
 
-    END();
     return OP_NODE(OP_FINISH, NULL, NULL);
 }
 
 Node_t* GetParams(Node_t** tokens, int* ind) {
-    START();
     if (!CHECK_TOKEN(tokens[*ind], OP_LBR)) {
         printf("(parsing params) expected \"function\", but getting: ");
         PrintValueNode(tokens[*ind]);
@@ -331,12 +366,10 @@ Node_t* GetParams(Node_t** tokens, int* ind) {
 
     ++*ind;
 
-    END();
     return node;
 }
 
 Node_t* GetParam(Node_t** tokens, int* ind) {
-    START();
     if (!CHECK_TOKEN(tokens[*ind], OP_PARAM)) {
         printf("(parsing param) expected \"param\", but getting: ");
         PrintValueNode(tokens[*ind]);
@@ -351,12 +384,10 @@ Node_t* GetParam(Node_t** tokens, int* ind) {
     name = tokens[*ind];
     ++*ind;
     
-    END();
     return OP_NODE(OP_PARAM, NULL, name);
 }
 
 Node_t* GetCall(Node_t** tokens, int* ind) {
-    START();
     if (!CHECK_TOKEN(tokens[*ind], OP_CALL)) {
         printf("(parsing call) expected \"call\", but getting: ");
         PrintValueNode(tokens[*ind]);
@@ -377,12 +408,10 @@ Node_t* GetCall(Node_t** tokens, int* ind) {
     }
     ++*ind;
 
-    END();
     return OP_NODE(OP_CALL, name, args);
 }
 
 Node_t* GetArgues(Node_t** tokens, int* ind) {
-    START();
     if (!CHECK_TOKEN(tokens[*ind], OP_LBR)) {
         printf("(parsing argues) expected \"(\", but getting: ");
         PrintValueNode(tokens[*ind]);
@@ -407,12 +436,10 @@ Node_t* GetArgues(Node_t** tokens, int* ind) {
     }
     ++*ind;
 
-    END();
     return node;
 }
 
 Node_t* GetInput(Node_t** tokens, int* ind) {
-    START();
     if (!CHECK_TOKEN(tokens[*ind], OP_INPUT)) {
         printf("(parsing input) expected \"input\", but getting: ");
         PrintValueNode(tokens[*ind]);
@@ -434,12 +461,10 @@ Node_t* GetInput(Node_t** tokens, int* ind) {
     }
     ++*ind;
 
-    END();
     return OP_NODE(OP_INPUT, NULL, c(node));
 }
 
 Node_t* GetOutput(Node_t** tokens, int* ind) {
-    START();
     if (!CHECK_TOKEN(tokens[*ind], OP_OUTPUT)) {
         printf("(parsing output) expected \"output\", but getting: ");
         PrintValueNode(tokens[*ind]);
@@ -455,13 +480,10 @@ Node_t* GetOutput(Node_t** tokens, int* ind) {
     }
     ++*ind;
 
-    END();
     return OP_NODE(OP_OUTPUT, NULL, c(node));
 }
 
 Node_t* GetWhile(Node_t** tokens, int* ind) {
-    START();
-
     if (!CHECK_TOKEN(tokens[*ind], OP_WHILE)) {
         printf("(parsing while) expected \"while\", but getting: ");
         PrintValueNode(tokens[*ind]);
@@ -480,13 +502,10 @@ Node_t* GetWhile(Node_t** tokens, int* ind) {
 
     Node_t* node2 = GetOp(tokens, ind);
 
-    END();
     return OP_NODE(OP_WHILE, c(node), c(node2));
 }
 
 Node_t* GetIf(Node_t** tokens, int* ind) {
-    START();
-
     if (!CHECK_TOKEN(tokens[*ind], OP_IF)) {
         printf("(parsing if) expected \"if\", but getting: ");
         PrintValueNode(tokens[*ind]);
@@ -505,13 +524,30 @@ Node_t* GetIf(Node_t** tokens, int* ind) {
     ++*ind;
 
     Node_t* node2 = GetOp(tokens, ind);
-
-    END();
+    
     return OP_NODE(OP_IF, c(node), c(node2));
 }
 
+Node_t* GetDraw(Node_t** tokens, int* ind) {
+    if (!CHECK_TOKEN(tokens[*ind], OP_DRAW)) {
+        printf("(parsing draw) expected \"draw\", but getting: ");
+        PrintValueNode(tokens[*ind]);
+        return NULL;
+    }
+
+    Node_t* node = tokens[*ind];
+    ++*ind;
+
+    if (!CHECK_TOKEN(tokens[*ind], OP_OPER)) {
+        printf("There'isnt operation ended symbol (draw)\n");
+        return NULL;
+    }
+    ++*ind;
+
+    return node;
+}
+
 Node_t* GetA(Node_t** tokens, int* ind) {
-    START();
     Node_t* node = tokens[*ind];
     if (node->type != VAR)
         return NULL;
@@ -524,12 +560,10 @@ Node_t* GetA(Node_t** tokens, int* ind) {
 
     Node_t* node2 = GetE(tokens, ind);
 
-    END();
     return OP_NODE(OP_EQ, c(node), c(node2));
 }
 
 Node_t* GetE(Node_t** tokens, int* ind) {
-    START();
     Node_t* node = GetSimple(tokens, ind);
 
     while (CHECK_TOKEN(tokens[*ind], OP_EQUAL) || CHECK_TOKEN(tokens[*ind], OP_LESS) || CHECK_TOKEN(tokens[*ind], OP_ABOVE)) {
@@ -545,33 +579,27 @@ Node_t* GetE(Node_t** tokens, int* ind) {
             node = OP_NODE(OP_ABOVE, c(node), c(node2));
     }
 
-    END();
     return node;
 }
 
 Node_t* GetSimple(Node_t** tokens, int* ind) {
-    START();
     Node_t* node = GetT(tokens, ind);
 
-    while (CHECK_TOKEN(tokens[*ind], OP_ADD) || CHECK_TOKEN(tokens[*ind], OP_SUB) || CHECK_TOKEN(tokens[*ind], OP_POW)) {
+    while (CHECK_TOKEN(tokens[*ind], OP_ADD) || CHECK_TOKEN(tokens[*ind], OP_SUB)) {
         int op = tokens[*ind]->value->type;
         ++*ind;
 
         Node_t* node2 = GetT(tokens, ind);
-        if (op == OP_POW)
-            node = OP_NODE(OP_POW, c(node), c(node2));
-        else if (op == OP_ADD)
+        if (op == OP_ADD)
             node = OP_NODE(OP_ADD, c(node), c(node2));
         else 
             node = OP_NODE(OP_SUB, c(node), c(node2));
     }
-
-    END();
+    
     return node;
 }
 
 Node_t* GetT(Node_t** tokens, int* ind) {
-    START();
     Node_t* node = GetPower(tokens, ind);
 
     while (CHECK_TOKEN(tokens[*ind], OP_MUL) || CHECK_TOKEN(tokens[*ind], OP_DIV)) {
@@ -584,29 +612,24 @@ Node_t* GetT(Node_t** tokens, int* ind) {
         else 
             node = OP_NODE(OP_DIV, c(node), c(node2));
     }
-
-    END();
+   
     return node;
 }
 
 Node_t* GetPower(Node_t** tokens, int* ind) {
-    START();
     Node_t* node = GetP(tokens, ind);
 
     while (CHECK_TOKEN(tokens[*ind], OP_POW)) {
         ++*ind;
         Node_t* node2 = GetP(tokens, ind);
         
-        node = OP_NODE(OP_POW, c(node), c(node2));
+        node = OP_NODE(OP_POW, c(node2), c(node));
     }
-
-    END();
+    
     return node;
 }
 
 Node_t* GetP(Node_t** tokens, int* ind) {
-    START();
-
     if (CHECK_TOKEN(tokens[*ind], OP_LBR)) {
         ++*ind;
         Node_t* node = GetE(tokens, ind);
@@ -615,7 +638,6 @@ Node_t* GetP(Node_t** tokens, int* ind) {
             return NULL;
         ++*ind;
 
-        END();
         return node;
     }
 
@@ -627,7 +649,6 @@ Node_t* GetP(Node_t** tokens, int* ind) {
         else {
             Node_t* node = tokens[*ind];
             ++*ind;
-            END();
             return node;
         }
 
@@ -648,7 +669,6 @@ Node_t* GetP(Node_t** tokens, int* ind) {
                     return NULL;
                 ++*ind;
 
-                END();
                 return OP_NODE(OP_SQRT, NULL, node);
                 
             case OP_LN:
@@ -662,7 +682,6 @@ Node_t* GetP(Node_t** tokens, int* ind) {
                     return NULL;
                 ++*ind;
 
-                END();
                 return node;
             
             case OP_LOG:
@@ -682,7 +701,6 @@ Node_t* GetP(Node_t** tokens, int* ind) {
                     return NULL;
                 ++*ind;
 
-                END();
                 return OP_NODE(OP_LOG, c(base), c(argue));
             
             case OP_EXP:
@@ -697,7 +715,6 @@ Node_t* GetP(Node_t** tokens, int* ind) {
                     return NULL;
                 ++*ind;
 
-                END();
                 return OP_NODE(OP_EXP, NULL, c(node));
             
             case OP_CALL:
@@ -708,7 +725,6 @@ Node_t* GetP(Node_t** tokens, int* ind) {
                 name = tokens[*ind];
                 ++*ind;
 
-                END();
                 return OP_NODE(OP_CALL, name, GetArgues(tokens, ind));
                 
             default:
@@ -738,7 +754,6 @@ Node_t* GetP(Node_t** tokens, int* ind) {
     Node_t* node = tokens[*ind];
     ++*ind;
 
-    END();
     return node;
 }
 

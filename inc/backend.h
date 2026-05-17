@@ -22,6 +22,9 @@ void PrintOutput(Node_t* node, FILE* ex_file, Tree_t* tree);
 
 void PrintComma(Node_t* node, FILE* ex_file, Tree_t* tree);
 void PrintComp(Node_t* node, FILE* ex_file, Tree_t* tree);
+void PrintPutm(Node_t* node, FILE* ex_file, Tree_t* tree);
+void PrintEnd(Node_t* node, FILE* ex_file, Tree_t* tree);
+void PrintDraw(Node_t* node, FILE* ex_file, Tree_t* tree);
 
 void PrintDefault(Node_t* node, FILE* ex_file, Tree_t* tree);
 
