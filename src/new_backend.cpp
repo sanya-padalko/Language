@@ -138,11 +138,27 @@ void PrintWhile(Node_t* node, FILE* ex_file, Tree_t* tree) {
 					 ".endwhile_%d:			\n\n", while_ind, while_ind);
 }
 
+// Добавить в PrintStart
+/*
+section .rodata
+    msg_format_out: db "%lg", 10, 0
+*/
 void PrintInput(Node_t* node, FILE* ex_file, Tree_t* tree) {
-    fprintf(ex_file, "IN\n");
-
     int ind = GetVarInd(tree, GetRight(node)->value->name);
-    PrintPopVar(ex_file, ind);
+    int offset = (ind + 1) * 8;
+
+    fprintf(ex_file, 
+        "    ; --- Ввод числа (IN) ---		\n"
+        "    mov rbx, rsp                  ; cохраняем стек\n"
+        "    and rsp, ~0xF                 ; стек по 16 байт\n"
+        
+        "    lea rsi, [rbp - %d]           ; RSI = адрес переменной %s\n"
+        "    lea rdi, [rel msg_format_out] ; RDI = адрес строки \"%%lg\"\n"
+        "    mov al, 0                     ; 0 вещ. аргументов\n"
+        "    call _scanf                   ; системный scanf\n"
+        "\n"
+        "    mov rsp, rbx                  ; восстанавливаем оригинальный стек\n"
+        "    ; ------------------------		\n\n", offset, GetRight(node)->value->name);
 }
 
 // Добавить в PrintStart
