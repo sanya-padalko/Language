@@ -126,10 +126,28 @@ void PrintInput(Node_t* node, FILE* ex_file, Tree_t* tree) {
     PrintPopVar(ex_file, ind);
 }
 
+// Добавить в PrintStart
+/*
+section .rodata
+    msg_format_out: db "%lg", 10, 0
+*/
 void PrintOutput(Node_t* node, FILE* ex_file, Tree_t* tree) {
     Backend(GetRight(node), ex_file, tree);
     
-    fprintf(ex_file, "OUT\n");
+    fprintf(ex_file, 
+        "    ; --- Вывод числа (OUT) ---\n"
+        "    pop rax								\n"
+        "    movq xmm0, rax                ; передаем наш double в xmm0\n"
+        
+        "    mov rbx, rsp                  ; сохраняем оригинальный стек в rbx\n"
+        "    and rsp, ~0xF                 ; выравниваем стек по границе 16 байт\n"
+        
+        "    lea rdi, [rel msg_format_out] ; загружаем адрес строки формата \"%%lg\\n\"\n"
+        "    mov al, 1                     ; 1 вещ. аргумент\n"
+        "    call _printf                  ; системный printf\n"
+        
+        "    mov rsp, rbx                  ; восстанавливаем оригинальный стек\n"
+        "    ; ------------------------\n\n");
 }
 
 void PrintDraw(Node_t* node, FILE* ex_file, Tree_t* tree) {
@@ -254,6 +272,7 @@ void PrintComp(Node_t* node, FILE* ex_file, Tree_t* tree) {
     ++comp_cnt;
 }
 
+// Destruction: rax, rbx, rcx, xmm0, xmm1
 void PrintDefault(Node_t* node, FILE* ex_file, Tree_t* tree) {
     Backend(node->left, ex_file, tree);
     Backend(node->right, ex_file, tree);
