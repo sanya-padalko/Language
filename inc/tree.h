@@ -129,22 +129,22 @@ struct Operation_t {
 };
 
 const Operation_t opers[] = {
-    { .type = OP_ADD,         .lang_view = "смешайте_с",       
+    { .type = OP_ADD,         .lang_view = "",       
         .dump_view = "+",          .func = Sum   ,    .proc_view = "ADD" },
 
-    { .type = OP_SUB,         .lang_view = "ложкой_отделите_от",   
+    { .type = OP_SUB,         .lang_view = "",   
         .dump_view = "-",          .func = Sub   ,    .proc_view = "SUB" },
 
-    { .type = OP_MUL,         .lang_view = "перемешайте_в_блендере с",              
+    { .type = OP_MUL,         .lang_view = "",              
         .dump_view = "*",          .func = Mul   ,    .proc_view = "MUL" },
 
-    { .type = OP_DIV,         .lang_view = "отделите_ситом_от",              
+    { .type = OP_DIV,         .lang_view = "",              
         .dump_view = "/",          .func = Div   ,    .proc_view = "DIV" },
 
-    { .type = OP_POW,         .lang_view = "порций",              
+    { .type = OP_POW,         .lang_view = "",              
         .dump_view = "^",          .func = Pow   ,    .proc_view = "POW" },
 
-    { .type = OP_SQRT,        .lang_view = "извлечь_содержимое_из",              
+    { .type = OP_SQRT,        .lang_view = "",              
         .dump_view = "sqrt",       .func = Sqrt  ,    .proc_view = "SQRT"},
 
     { .type = OP_LN,          .lang_view = "ln",              
@@ -180,58 +180,58 @@ const Operation_t opers[] = {
     { .type = OP_ACOT,        .lang_view = "arccot",              
         .dump_view = "arccot",     .func = Acot  ,    .proc_view = ""    },
 
-    { .type = OP_EQUAL,       .lang_view = "нравится_также,_как_и",              
+    { .type = OP_EQUAL,       .lang_view = "",              
         .dump_view = "==",         .func = NULL  ,    .proc_view = ""    },
 
-    { .type = OP_LESS,        .lang_view = "нравится_меньше,_чем",              
+    { .type = OP_LESS,        .lang_view = "",              
         .dump_view = "<",          .func = NULL  ,    .proc_view = ""    },
 
-    { .type = OP_ABOVE,       .lang_view = "нравится_больше,_чем",              
+    { .type = OP_ABOVE,       .lang_view = "",              
         .dump_view = ">",          .func = NULL  ,    .proc_view = ""    },
 
-    { .type = OP_EQ,          .lang_view = ",_всего граммов",              
+    { .type = OP_EQ,          .lang_view = "",              
         .dump_view = "=",          .func = NULL  ,    .proc_view = ""    },
 
-    { .type = OP_IF,          .lang_view = "Далее_на_вкус,_если",              
+    { .type = OP_IF,          .lang_view = "",              
         .dump_view = "if",         .func = NULL  ,    .proc_view = ""    },
 
-    { .type = OP_OPER,        .lang_view = ";",              
+    { .type = OP_OPER,        .lang_view = "",              
         .dump_view = ";",          .func = NULL  ,    .proc_view = ""    },
 
-    { .type = OP_WHILE,       .lang_view = "Уберите_в_духовку_на_300 градусов._Держите,_пока",              
+    { .type = OP_WHILE,       .lang_view = "",              
         .dump_view = "while",      .func = NULL  ,    .proc_view = ""    },
 
-    { .type = OP_FUNC,        .lang_view = "Блюдо",              
+    { .type = OP_FUNC,        .lang_view = "",              
         .dump_view = "function",   .func = NULL  ,    .proc_view = ""    },
 
-    { .type = OP_PARAM,       .lang_view = "ингридиент:",              
+    { .type = OP_PARAM,       .lang_view = "",              
         .dump_view = "param",      .func = NULL  ,    .proc_view = ""    },
 
-    { .type = OP_RETURN,      .lang_view = "Блюдо_готово._Осталось:",              
+    { .type = OP_RETURN,      .lang_view = "",              
         .dump_view = "return",     .func = NULL  ,    .proc_view = "RET" },
 
-    { .type = OP_CALL,        .lang_view = "Приготовьте",              
+    { .type = OP_CALL,        .lang_view = "",              
         .dump_view = "call",       .func = NULL  ,    .proc_view = ""    },
 
-    { .type = OP_INPUT,       .lang_view = "Достаньте_из_холодильника",              
+    { .type = OP_INPUT,       .lang_view = "",              
         .dump_view = "input",      .func = NULL  ,    .proc_view = "IN"  },
 
-    { .type = OP_OUTPUT,      .lang_view = "Аккуратно_выложите_на_тарелку",              
+    { .type = OP_OUTPUT,      .lang_view = "",              
         .dump_view = "output",     .func = NULL  ,    .proc_view = "OUT" },
 
-    { .type = OP_PROCEDURE,   .lang_view = "Закуска",              
+    { .type = OP_PROCEDURE,   .lang_view = "",              
         .dump_view = "procedure",  .func = NULL  ,    .proc_view = ""    }, 
 
-    { .type = OP_FINISH,      .lang_view = "Закуска_готова",              
+    { .type = OP_FINISH,      .lang_view = "",              
         .dump_view = "finish",     .func = NULL  ,    .proc_view = "RET" },
     
-    { .type = OP_DRAW,        .lang_view = "Фото_блюда",              
+    { .type = OP_DRAW,        .lang_view = "",              
         .dump_view = "draw",     .func = NULL  ,      .proc_view = "DRAW"},
     
-    { .type = OP_PUTM,        .lang_view = "Запомните_рецепт",              
+    { .type = OP_PUTM,        .lang_view = "",              
         .dump_view = "putm",     .func = NULL  ,      .proc_view = ""    },
     
-    { .type = OP_END,         .lang_view = "Прибирайтесь",              
+    { .type = OP_END,         .lang_view = "",              
         .dump_view = "end",      .func = NULL  ,      .proc_view = "HLT" },
 
     { .type = OP_COMMA,       .lang_view = ",",              

@@ -43,13 +43,6 @@ Tokenizator_t* SelectTokens(const char** s) {
 
 Node_t* SelectOper(const char** s) {
     for (int i = OP_ADD; i <= OP_COMMA; ++i) {
-        if (EQUAL(*s, opers[i].lang_view)) {
-            *s += strlen(opers[i].lang_view);
-            return OP_NODE(opers[i].type, NULL, NULL);
-        }
-    }
-
-    for (int i = OP_ADD; i <= OP_COMMA; ++i) {
         if (EQUAL(*s, opers[i].dump_view)) {
             *s += strlen(opers[i].dump_view);
             return OP_NODE(opers[i].type, NULL, NULL);

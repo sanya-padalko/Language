@@ -25,7 +25,7 @@ CodeError_t PrintVarInfo(const VarInfo varinfo);
 
 typedef int StackElem_t;
 
-struct stack_t {
+struct Stack_t {
     StackElem_t* data = NULL;
 
     unsigned long hash = 0;
@@ -34,10 +34,10 @@ struct stack_t {
     ssize_t capacity  = 0;
 };
 
-unsigned long calc_hash(stack_t *stack);
-int get_size(stack_t *stack);
-CodeError_t fill_poizon(stack_t *stack, int left, int right);
-static int StackRealloc(stack_t *stack, ssize_t new_size);
+unsigned long calc_hash(Stack_t *stack);
+int get_size(Stack_t *stack);
+CodeError_t fill_poizon(Stack_t *stack, int left, int right);
+static int StackRealloc(Stack_t *stack, ssize_t new_size);
 
 const StackElem_t POIZON_VALUE = 146988;
 const StackElem_t CANARY_LEFT  = 52954; // CEDA
@@ -70,19 +70,19 @@ const int NarrowMn =  3;
 const int BadSize  = -1;
 const int BaseStackSize = 1;
 
-int get_size(stack_t *stack);
+int get_size(Stack_t *stack);
 
-stack_t* StackCtor(ssize_t capacity ON_DEBUG(, VarInfo varinfo));
+Stack_t* StackCtor(ssize_t capacity ON_DEBUG(, VarInfo varinfo));
 
-CodeError_t StackDtor(stack_t *stack);
+CodeError_t StackDtor(Stack_t *stack);
 
-CodeError_t StackPush(stack_t *stack, StackElem_t new_value);
+CodeError_t StackPush(Stack_t *stack, StackElem_t new_value);
 
-StackElem_t StackPop(stack_t *stack);
+StackElem_t StackPop(Stack_t *stack);
 
-CodeError_t StackVerify(stack_t* stack);
+CodeError_t StackVerify(Stack_t* stack);
 
-void StackDump(stack_t *stack, VarInfo varinfo);
+void StackDump(Stack_t *stack, VarInfo varinfo);
 
 struct processor_t;
 
@@ -134,8 +134,8 @@ const size_t RamSize = 40000;
 const int MaxOperationSize = 20;
 
 struct processor_t {
-    stack_t *stack = NULL;
-    stack_t *stack_ret = NULL;
+    Stack_t *stack = NULL;
+    Stack_t *stack_ret = NULL;
 
     Text *code = NULL;
 

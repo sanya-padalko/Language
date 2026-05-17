@@ -1,7 +1,6 @@
 #include "folders.h"
 #include "tree.h"
 #include "parsing.h"
-#include "processor.h"
 #include "frontend.h"
 #include "backend.h"
 #include "reverse-end.h"
@@ -21,6 +20,7 @@ int main(int argc, char* argv[]) {
 
     Tree_t* tree = TreeCtor();
     ReadBase(tree, program);
+	fprintf(stderr, "%s", tree->buf);
     const char* cur_pos = tree->buf;
     Tokenizator_t* tok = SelectTokens(&cur_pos);
 
@@ -38,18 +38,4 @@ int main(int argc, char* argv[]) {
 
     FILE* program_file = fopen(assem_file, "w");
     Backend(ast->root, program_file, ast);
-    fprintf(program_file, "HLT\n");
-    fclose(program_file);
-
-    assembler_t assem = {};
-    assem.text_file = assem_file;
-    assem.commands_file = ex_file;
-    assem.listing_file = listing_file;
-
-    assembler(&assem);
-    
-    processor_t* proc = make_processor(ex_file);
-    LoadFile(proc);
-
-    execution(proc);
 }

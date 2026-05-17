@@ -1,9 +1,12 @@
 #include "folders.h"
 
 void MakeDir(const char* folder_name) {
-    char create_dir[100] = {};
-    sprintf(create_dir, "mkdir %s", folder_name);
+    char create_dir[200] = {};
+    sprintf(create_dir, "mkdir -p results");
     system(create_dir);
+	chdir("results");
+	sprintf(create_dir, "mkdir %s", folder_name);
+	system(create_dir);
 
     chdir(folder_name);
 }

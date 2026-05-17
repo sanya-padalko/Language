@@ -45,7 +45,7 @@ void TreeImgDump(const char* dot_file_name, Node_t* root) {
     fclose(dot_file);
 
     char dot_str[100] = {};
-    sprintf(dot_str, "\"C:\\Program Files\\Graphviz\\bin\\dot.exe\" %s -T svg -o result%d.svg", dot_file_name, dump_counter++);
+    sprintf(dot_str, "dot %s -T svg -o result%d.svg", dot_file_name, dump_counter++);
     system(dot_str);
 }
 
