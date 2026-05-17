@@ -236,40 +236,18 @@ void PrintEq(Node_t* node, FILE* ex_file, Tree_t* tree) {
                      "    movsd qword [rbp - %d], xmm0    ; %s = xmm0\n", offset, var_name);
 }
 
+// Destruction: rax
 void PrintComp(Node_t* node, FILE* ex_file, Tree_t* tree) {
     Backend(node->left, ex_file, tree);
     Backend(node->right, ex_file, tree);
 
-    static int comp_cnt = 0;
-    
-    int oper = node->value->type;
-    const char* comp_type = "JMP";
-    const char* label_name = "jmp";
+    fprintf(ex_file, "    pop rax				\n"
+                     "    movq xmm1, rax		\n");
 
-    switch (oper) {
-        case OP_EQUAL:
-            comp_type = "JE";
-            label_name = "je";
-            break;
-        case OP_ABOVE:
-            comp_type = "JA";
-            label_name = "ja";
-            break;
-        case OP_LESS:
-            comp_type = "JB";
-            label_name = "jb";
-            break;
-    }
-
-    fprintf(ex_file,    "\n%s :%s_%d\n"
-                        "PUSH 0\n"
-                        "JMP :endcomp_%d\n\n"
-                        ":%s_%d\n"
-                        "PUSH 1\n"
-                        ":endcomp_%d\n\n", comp_type, label_name, comp_cnt, comp_cnt, 
-                        label_name, comp_cnt, comp_cnt);
-
-    ++comp_cnt;
+	fprintf(ex_file, "    pop rax				\n"
+                     "    movq xmm0, rax		\n");
+	
+	fprintf(ex_file, "    ucomisd xmm0, xmm1 	\n");
 }
 
 // Destruction: rax, rbx, rcx, xmm0, xmm1
