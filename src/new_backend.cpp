@@ -113,19 +113,29 @@ void PrintIf(Node_t* node, FILE* ex_file, Tree_t* tree) {
 	fprintf(ex_file, ".endif_%d:\n", if_ind);
 }
 
+// Destruction: -
 void PrintWhile(Node_t* node, FILE* ex_file, Tree_t* tree) {
     static int while_cnt = 0;
     
     int while_ind = while_cnt++;
-    fprintf(ex_file, "\n:beginwhile_%d\n", while_ind);
+    fprintf(ex_file, "\n.beginwhile_%d:\n", while_ind);
 
     Backend(node->left, ex_file, tree);
-    fprintf(ex_file,    "PUSH 0\n"
-                        "JE :endwhile_%d\n", while_ind);
+    int comp_oper = node->left->value->type;
+    const char* jmp_type = "je";
+
+	switch (comp_oper) {
+        case OP_EQUAL: jmp_type = "jne"; break;
+        case OP_ABOVE: jmp_type = "jbe"; break;
+        case OP_LESS:  jmp_type = "jae"; break;
+    }
+
+	fprintf(ex_file, "    %s .endwhile_%d	\n\n", jmp_type, while_ind);
 
     Backend(node->right, ex_file, tree);
-    fprintf(ex_file,    "JMP :beginwhile_%d\n"
-                        ":endwhile_%d\n\n", while_ind, while_ind);
+	
+	fprintf(ex_file, "jmp .beginwhile_%d	\n"
+					 ".endwhile_%d:			\n\n", while_ind, while_ind);
 }
 
 void PrintInput(Node_t* node, FILE* ex_file, Tree_t* tree) {
