@@ -91,17 +91,26 @@ void PrintVar(Node_t* node, FILE* ex_file, Tree_t* tree) {
                      "    push rax						\n", offset, node->value->name);
 }
 
+// Destruction: -
 void PrintIf(Node_t* node, FILE* ex_file, Tree_t* tree) {
     static int if_cnt = 0;
     int if_ind = if_cnt++;
 
     Backend(node->left, ex_file, tree);
-    fprintf(ex_file,    "\n"
-                        "PUSH 0\n"
-                        "JE :endif_%d\n", if_ind);
+    int comp_oper = node->left->value->type;
+    const char* jmp_type = "je";
+
+	switch (comp_oper) {
+        case OP_EQUAL: jmp_type = "jne"; break;
+        case OP_ABOVE: jmp_type = "jbe"; break;
+        case OP_LESS:  jmp_type = "jae"; break;
+    }
+
+	fprintf(ex_file, "    %s .endif_%d\n\n", jmp_type, if_ind);
 
     Backend(node->right, ex_file, tree);
-    fprintf(ex_file,    ":endif_%d\n", if_ind);
+	
+	fprintf(ex_file, ".endif_%d:\n", if_ind);
 }
 
 void PrintWhile(Node_t* node, FILE* ex_file, Tree_t* tree) {
