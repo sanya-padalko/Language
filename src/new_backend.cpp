@@ -1,0 +1,288 @@
+#include "backend.h"
+#include "tree.h"
+
+void Backend(Node_t* node, FILE* ex_file, Tree_t* tree) {
+    if (!node)
+        return;
+
+    if (node->type == NUM) {
+        PrintNum(node, ex_file);
+        return;
+    }
+    
+    if (node->type == VAR) {
+        PrintVar(node, ex_file, tree);
+        return;
+    }
+
+    int oper = node->value->type;
+    switch (oper) {
+        case OP_IF:
+            PrintIf(node, ex_file, tree);
+            break;
+        case OP_WHILE:
+            PrintWhile(node, ex_file, tree);
+            break;
+        case OP_PROCEDURE:
+        case OP_FUNC:
+            PrintFunc(node, ex_file, tree);
+            break;
+        case OP_FINISH:
+        case OP_RETURN:
+            PrintReturn(node, ex_file, tree);
+            break;
+        case OP_CALL:
+            PrintCall(node, ex_file, tree);
+            break;
+        case OP_EQ:
+            PrintEq(node, ex_file, tree);
+            break;
+        case OP_INPUT:
+            PrintInput(node, ex_file, tree);
+            break;
+        case OP_OUTPUT:
+            PrintOutput(node, ex_file, tree);
+            break;
+        case OP_COMMA:
+            PrintComma(node, ex_file, tree);
+            break;
+        case OP_PUTM:
+            PrintPutm(node, ex_file, tree);
+            break;
+        case OP_END:
+            PrintEnd(node, ex_file, tree);
+            break;
+        case OP_DRAW:
+            PrintDraw(node, ex_file, tree);
+            break;
+        case OP_EQUAL:
+        case OP_LESS:
+        case OP_ABOVE:
+            PrintComp(node, ex_file, tree);
+            break;
+        
+        default:
+            PrintDefault(node, ex_file, tree);
+    }
+}
+
+void PrintNum(Node_t* node, FILE* ex_file) {
+	double val = node->value->value;
+    uint64_t bits;
+    memcpy(&bits, &val, sizeof(bits));
+
+    fprintf(ex_file, "    mov rax, %llu    	; загружаем double %lg в виде битов\n"
+                     "    push rax			\n", bits, val);
+}
+
+// Predict:		rbp - указатель на начало переменных в стеке
+// Destruction: rax, xmm0
+void PrintVar(Node_t* node, FILE* ex_file, Tree_t* tree) {
+    int ind = GetVarInd(tree, node->value->name);
+    if (ind == -1) {
+        printf(RED_COLOR "Wrong var's index\n" RESET_COLOR);
+        return;
+    }
+
+	int offset = (ind + 1) * 8; // каждая переменная по 8 байт, нам нужная ind-ая в 0-индексации
+    
+    fprintf(ex_file, "    movsd xmm0, qword [rbp - %d]	; Сохраняем переменную %s\n"
+                     "    movq rax, xmm0				\n"
+                     "    push rax						\n", offset, node->value->name);
+}
+
+void PrintIf(Node_t* node, FILE* ex_file, Tree_t* tree) {
+    static int if_cnt = 0;
+    int if_ind = if_cnt++;
+
+    Backend(node->left, ex_file, tree);
+    fprintf(ex_file,    "\n"
+                        "PUSH 0\n"
+                        "JE :endif_%d\n", if_ind);
+
+    Backend(node->right, ex_file, tree);
+    fprintf(ex_file,    ":endif_%d\n", if_ind);
+}
+
+void PrintWhile(Node_t* node, FILE* ex_file, Tree_t* tree) {
+    static int while_cnt = 0;
+    
+    int while_ind = while_cnt++;
+    fprintf(ex_file, "\n:beginwhile_%d\n", while_ind);
+
+    Backend(node->left, ex_file, tree);
+    fprintf(ex_file,    "PUSH 0\n"
+                        "JE :endwhile_%d\n", while_ind);
+
+    Backend(node->right, ex_file, tree);
+    fprintf(ex_file,    "JMP :beginwhile_%d\n"
+                        ":endwhile_%d\n\n", while_ind, while_ind);
+}
+
+void PrintInput(Node_t* node, FILE* ex_file, Tree_t* tree) {
+    fprintf(ex_file, "IN\n");
+
+    int ind = GetVarInd(tree, GetRight(node)->value->name);
+    PrintPopVar(ex_file, ind);
+}
+
+void PrintOutput(Node_t* node, FILE* ex_file, Tree_t* tree) {
+    Backend(GetRight(node), ex_file, tree);
+    
+    fprintf(ex_file, "OUT\n");
+}
+
+void PrintDraw(Node_t* node, FILE* ex_file, Tree_t* tree) {
+    fprintf(ex_file, "DRAW\n");
+}
+
+void PrintPutm(Node_t* node, FILE* ex_file, Tree_t* tree) {
+    Backend(GetRight(node), ex_file, tree);
+    Backend(GetLeft(node), ex_file, tree);
+    fprintf(ex_file, "POPR RDX\n");
+    fprintf(ex_file, "POPM [RDX]\n");
+}
+void PrintEnd(Node_t* node, FILE* ex_file, Tree_t* tree) {
+    Backend(GetLeft(node), ex_file, tree);
+    Backend(GetRight(node), ex_file, tree);
+    fprintf(ex_file, "HLT\n");
+}
+
+void PrintFunc(Node_t* node, FILE* ex_file, Tree_t* tree) {
+    const char* func_name = GetLeft(GetLeft(node))->value->name;
+    fprintf(ex_file, "JMP :after_%s\n", func_name);
+    fprintf(ex_file, "\n:%s\n", func_name);
+
+    Tree_t* params = TreeCtor();
+    params->root = GetRight(GetLeft(node));
+    SelectTreeVars(GetRight(GetLeft(node)), params);
+
+    for (int i = params->var_cnt - 1; i >= 0; --i) {
+        PrintPopVar(ex_file, i);
+    }
+
+    Tree_t* subtree = TreeCtor();
+    subtree->root = node;
+    SelectTreeVars(node, subtree);
+    subtree->func_cnt = tree->func_cnt;
+    subtree->funcs = tree->funcs;
+
+    Backend(node->right, ex_file, subtree);
+    fprintf(ex_file, "\n:after_%s\n", func_name);
+}
+
+void PrintCall(Node_t* node, FILE* ex_file, Tree_t* tree) {
+    if (CheckTreeFunc(GetLeft(node), tree) == -1) {
+        printf("Calling a non-existent function or procedure: %s\n", GetLeft(node)->value->name);
+        return;
+    }
+
+    Backend(GetRight(node), ex_file, tree);
+
+    fprintf(ex_file,    "\n"
+                        "PUSHR RBX\n"
+                        "PUSH %d\n"
+                        "ADD\n"
+                        "POPR RBX\n"
+                        "\n"
+                        "CALL :%s\n"
+                        "\n"
+                        "PUSHR RBX\n"
+                        "PUSH %d\n"
+                        "SUB\n"
+                        "POPR RBX\n\n", tree->var_cnt, GetLeft(node)->value->name, tree->var_cnt);
+}
+
+void PrintComma(Node_t* node, FILE* ex_file, Tree_t* tree) {
+    Backend(GetLeft(node), ex_file, tree);
+    Backend(GetRight(node), ex_file, tree);
+}
+
+void PrintReturn(Node_t* node, FILE* ex_file, Tree_t* tree) {
+    Backend(node->right, ex_file, tree);
+
+    fprintf(ex_file, "\nRET\n");
+}
+
+// Predict:		rbp - указатель на начало переменных в стеке
+// Destruction: rax, xmm0
+void PrintEq(Node_t* node, FILE* ex_file, Tree_t* tree) {
+    Backend(node->right, ex_file, tree);
+    char* var_name = node->left->value->name;
+    
+    int ind = GetVarInd(tree, var_name);
+	int offset = (ind + 1) * 8;
+
+    fprintf(ex_file, "    pop rax\n"
+                     "    movq xmm0, rax\n"
+                     "    movsd qword [rbp - %d], xmm0    ; %s = xmm0\n", offset, var_name);
+}
+
+void PrintComp(Node_t* node, FILE* ex_file, Tree_t* tree) {
+    Backend(node->left, ex_file, tree);
+    Backend(node->right, ex_file, tree);
+
+    static int comp_cnt = 0;
+    
+    int oper = node->value->type;
+    const char* comp_type = "JMP";
+    const char* label_name = "jmp";
+
+    switch (oper) {
+        case OP_EQUAL:
+            comp_type = "JE";
+            label_name = "je";
+            break;
+        case OP_ABOVE:
+            comp_type = "JA";
+            label_name = "ja";
+            break;
+        case OP_LESS:
+            comp_type = "JB";
+            label_name = "jb";
+            break;
+    }
+
+    fprintf(ex_file,    "\n%s :%s_%d\n"
+                        "PUSH 0\n"
+                        "JMP :endcomp_%d\n\n"
+                        ":%s_%d\n"
+                        "PUSH 1\n"
+                        ":endcomp_%d\n\n", comp_type, label_name, comp_cnt, comp_cnt, 
+                        label_name, comp_cnt, comp_cnt);
+
+    ++comp_cnt;
+}
+
+void PrintDefault(Node_t* node, FILE* ex_file, Tree_t* tree) {
+    Backend(node->left, ex_file, tree);
+    Backend(node->right, ex_file, tree);
+
+	fprintf(ex_file, "    pop rcx			\n"
+                     "    movq xmm1, rcx	\n");
+	
+	fprintf(ex_file, "    pop rbx			\n"
+                     "    movq xmm0, rbx	\n");
+	
+	int oper = node->value->type;
+	switch (oper) {
+		case OP_ADD:
+			fprintf(ex_file, "    addsd xmm0, xmm1    ; xmm0 = левый + правый\n");
+            break;
+		case OP_SUB:
+			fprintf(ex_file, "    subsd xmm0, xmm1    ; xmm0 = левый - правый\n");
+            break;
+		case OP_MUL:
+			fprintf(ex_file, "    mulsd xmm0, xmm1    ; xmm0 = левый * правый\n");
+            break;
+		case OP_DIV:
+			fprintf(ex_file, "    divsd xmm0, xmm1    ; xmm0 = левый / правый\n");
+            break;
+		
+		default:
+            fprintf(stderr, "Unknown mathematical operator: %d, node: %llX\n", oper, (uint64_t)node);
+	}
+	
+	fprintf(ex_file, "    movq rax, xmm0	\n"
+                     "    push rax			\n\n");
+}
