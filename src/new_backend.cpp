@@ -203,16 +203,10 @@ void PrintEnd(Node_t* node, FILE* ex_file, Tree_t* tree) {
 
 void PrintFunc(Node_t* node, FILE* ex_file, Tree_t* tree) {
     const char* func_name = GetLeft(GetLeft(node))->value->name;
-    fprintf(ex_file, "JMP :after_%s\n", func_name);
-    fprintf(ex_file, "\n:%s\n", func_name);
+    fprintf(ex_file, "\n_%s:\n", func_name);
 
-    Tree_t* params = TreeCtor();
-    params->root = GetRight(GetLeft(node));
-    SelectTreeVars(GetRight(GetLeft(node)), params);
-
-    for (int i = params->var_cnt - 1; i >= 0; --i) {
-        PrintPopVar(ex_file, i);
-    }
+	fprintf(ex_file, "    push rbp		\n"
+                     "    mov rbp, rsp	\n");
 
     Tree_t* subtree = TreeCtor();
     subtree->root = node;
@@ -220,8 +214,26 @@ void PrintFunc(Node_t* node, FILE* ex_file, Tree_t* tree) {
     subtree->func_cnt = tree->func_cnt;
     subtree->funcs = tree->funcs;
 
+	fprintf(ex_file, "    sub rsp, %d    ; место под %d переменных\n", 
+                subtree->var_cnt * 8, subtree->var_cnt);
+
+    Tree_t* params = TreeCtor();
+    params->root = GetRight(GetLeft(node));
+    SelectTreeVars(GetRight(GetLeft(node)), params);
+
+    for (int i = params->var_cnt - 1; i >= 0; --i) { // все аргументы были переданы через стек
+		int offset = (i + 1) * 8;
+
+        fprintf(ex_file, "    pop rax\n"
+                    	 "    movq xmm0, rax\n"
+                    	 "    movsd qword [rbp - %d], xmm0\n", offset);
+    }
+
     Backend(node->right, ex_file, subtree);
-    fprintf(ex_file, "\n:after_%s\n", func_name);
+	
+	fprintf(ex_file, "    mov rsp, rbp	\n"
+                     "    pop rbp		\n"
+                     "    ret			\n");
 }
 
 void PrintCall(Node_t* node, FILE* ex_file, Tree_t* tree) {
@@ -232,18 +244,7 @@ void PrintCall(Node_t* node, FILE* ex_file, Tree_t* tree) {
 
     Backend(GetRight(node), ex_file, tree);
 
-    fprintf(ex_file,    "\n"
-                        "PUSHR RBX\n"
-                        "PUSH %d\n"
-                        "ADD\n"
-                        "POPR RBX\n"
-                        "\n"
-                        "CALL :%s\n"
-                        "\n"
-                        "PUSHR RBX\n"
-                        "PUSH %d\n"
-                        "SUB\n"
-                        "POPR RBX\n\n", tree->var_cnt, GetLeft(node)->value->name, tree->var_cnt);
+	fprintf(ex_file, "    call _%s\n", GetLeft(node)->value->name);
 }
 
 void PrintComma(Node_t* node, FILE* ex_file, Tree_t* tree) {
@@ -254,7 +255,11 @@ void PrintComma(Node_t* node, FILE* ex_file, Tree_t* tree) {
 void PrintReturn(Node_t* node, FILE* ex_file, Tree_t* tree) {
     Backend(node->right, ex_file, tree);
 
-    fprintf(ex_file, "\nRET\n");
+    fprintf(ex_file, "    pop rax		\n"
+					 "    mov rsp, rbp	\n"
+                     "    pop rbp		\n"
+					 "    push rax		\n"
+					 "    ret			\n");
 }
 
 // Predict:		rbp - указатель на начало переменных в стеке
