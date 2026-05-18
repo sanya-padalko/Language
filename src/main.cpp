@@ -37,5 +37,6 @@ int main(int argc, char* argv[]) {
     TreeCodeGenerate(ast);
 
     FILE* program_file = fopen(assem_file, "w");
+	PrintFileStart(program_file);
     Backend(ast->root, program_file, ast);
 }
